@@ -1,6 +1,6 @@
 package com.reader_hub.application.dto;
 
-import com.reader_hub.domain.model.Relationchip;
+import com.reader_hub.domain.model.Relationship;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -12,7 +12,7 @@ public class MangaDto {
     private String id;
     private String type;
     private ApiMangaAttributes attributes;
-    private Relationchip[] relationships;
+    private Relationship[] relationships;
 
     @Data
     public static class ApiMangaAttributes {

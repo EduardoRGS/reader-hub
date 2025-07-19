@@ -16,6 +16,7 @@ import java.util.List;
 public class Author {
     
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
     
     @Column(nullable = false)
@@ -23,8 +24,8 @@ public class Author {
     
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "en", column = @Column(name = "biography_en")),
-        @AttributeOverride(name = "pt_BR", column = @Column(name = "biography_pt_br"))
+        @AttributeOverride(name = "en", column = @Column(name = "biography_en", length = 2000)),
+        @AttributeOverride(name = "pt_BR", column = @Column(name = "biography_pt_br", length = 2000))
     })
     private Language biography;
     
