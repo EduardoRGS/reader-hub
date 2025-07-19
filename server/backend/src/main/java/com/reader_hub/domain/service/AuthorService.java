@@ -1,5 +1,6 @@
 package com.reader_hub.domain.service;
 
+import com.reader_hub.application.dto.AuthorDto;
 import com.reader_hub.domain.model.Author;
 import com.reader_hub.domain.repository.AuthorRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,12 +35,12 @@ public class AuthorService {
     /**
      * Cria um novo autor
      */
-    public Author createAuthor(String id, String name) {
-        log.info("Criando novo autor - ID: {}, Nome: {}", id, name);
+    public Author createAuthor(AuthorDto authorDto) {
+        log.info("Criando novo autor - Nome: {}", authorDto.getAttributes().getName());
         
-        Author author = new Author();
-        author.setId(id);
-        author.setName(name);
+        var author = new Author();
+        author.setName(authorDto.getAttributes().getName());
+        author.setBiography(authorDto.getAttributes().getBiography());
         
         return saveAuthor(author);
     }
