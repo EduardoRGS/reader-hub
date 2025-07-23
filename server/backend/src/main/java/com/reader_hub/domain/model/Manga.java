@@ -17,7 +17,11 @@ import java.util.Map;
 public class Manga {
     
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+
+    @Column(nullable = false, unique = true)
+    private String apiId;
     
     @ElementCollection
     @CollectionTable(name = "manga_titles", joinColumns = @JoinColumn(name = "manga_id"))

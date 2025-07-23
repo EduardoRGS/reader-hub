@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -31,6 +32,11 @@ public class AuthorController {
     @GetMapping()
     public PaginatedDto<AuthorDto> getAuthors(@RequestParam int limit, @RequestParam int offset) {
         return apiService.getAuthors(limit, offset);
+    }
+
+    @GetMapping("/listAll")
+    public List<Author> getAllAuthors () {
+        return authorService.findAll();
     }
 
     @PostMapping

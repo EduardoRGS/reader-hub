@@ -1,18 +1,25 @@
 package com.reader_hub.domain.service;
 
+import com.reader_hub.application.dto.AuthorDto;
+import com.reader_hub.application.dto.MangaDto;
+import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Author;
 import com.reader_hub.domain.model.Manga;
 import com.reader_hub.domain.repository.MangaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,11 +28,13 @@ import java.util.Optional;
 public class MangaService {
     
     private final MangaRepository mangaRepository;
+    private final ApiService apiService;
     private final AuthorService authorService;
     
     /**
      * Salva um novo mangá no banco de dados
      */
+    @Transactional()
     public Manga saveManga(Manga manga) {
         log.info("Salvando mangá: {}", manga.getId());
         
@@ -35,31 +44,50 @@ public class MangaService {
                 throw new IllegalArgumentException("Autor não encontrado com ID: " + manga.getAuthor().getId());
             }
         }
-        
-        return mangaRepository.save(manga);
+        var saved = mangaRepository.save(manga);
+        log.info("Mangá salvo com ID interno: {} e apiId: {}", saved.getId(), saved.getApiId());
+        return saved;
     }
     
     /**
      * Cria um novo mangá
      */
-    public Manga createManga(String id, Map<String, String> title, String status, String authorId) {
-        log.info("Criando novo mangá - ID: {}, Autor ID: {}", id, authorId);
-        
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public Manga createManga(MangaDto dto) {
+        var existente = mangaRepository.findByApiId(dto.getId());
+
+        if (existente.isPresent()) {
+            log.info("Mangá já existe: {}", dto.getId());
+            return existente.get();
+        }
+
+        var filteredTitle = dto.getAttributes().getTitle().entrySet().stream()
+                .filter(e -> List.of("pt-br", "en").contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        var descriptionFiltered = dto.getAttributes().getDescription().entrySet().stream()
+                .filter(e -> e.getKey().equals("en") || e.getKey().equals("pt-br"))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
         Manga manga = new Manga();
-        manga.setId(id);
-        manga.setTitle(title);
-        manga.setStatus(status);
+        manga.setApiId(dto.getId());
+        manga.setTitle(filteredTitle);
+        manga.setDescription(descriptionFiltered);
+        manga.setStatus(dto.getAttributes().getStatus());
+        manga.setYear(dto.getAttributes().getYear());
         
         // Se foi informado um autor, buscar e associar
-        if (authorId != null) {
-            Optional<Author> author = authorService.findById(authorId);
+        var relationAuthor = Arrays.stream(dto.getRelationships())
+                .filter(type -> type.getType().equals("author")).findFirst().orElse(null);
+        if (relationAuthor != null) {
+            var author = authorService.findByApiId(relationAuthor.getId());
             if (author.isPresent()) {
                 manga.setAuthor(author.get());
             } else {
-                throw new IllegalArgumentException("Autor não encontrado com ID: " + authorId);
+                throw new IllegalArgumentException("Autor não encontrado com ID: " + relationAuthor.getType());
             }
         }
-        
+
         return saveManga(manga);
     }
     
@@ -209,5 +237,10 @@ public class MangaService {
             return updateManga(manga);
         }
         throw new IllegalArgumentException("Mangá não encontrado com ID: " + id);
+    }
+
+    @Autowired
+    public ApiService setApiService(ApiService apiService) {
+        return apiService;
     }
 } 

@@ -1,5 +1,6 @@
 package com.reader_hub.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,9 @@ public class Author {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+
+    @Column(nullable = false, unique = true)
+    private String apiId;
     
     @Column(nullable = false)
     private String name;
@@ -36,6 +40,7 @@ public class Author {
     private OffsetDateTime updatedAt;
     
     @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Manga> mangas;
     
     @PrePersist

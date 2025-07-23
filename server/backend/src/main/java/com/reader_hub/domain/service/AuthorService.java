@@ -39,6 +39,7 @@ public class AuthorService {
         log.info("Criando novo autor - Nome: {}", authorDto.getAttributes().getName());
         
         var author = new Author();
+        author.setApiId(authorDto.getId());
         author.setName(authorDto.getAttributes().getName());
         author.setBiography(authorDto.getAttributes().getBiography());
         
@@ -65,7 +66,12 @@ public class AuthorService {
     public Optional<Author> findById(String id) {
         return authorRepository.findById(id);
     }
-    
+
+    @Transactional(readOnly = true)
+    public Optional<Author> findByApiId(String apiId) {
+        return authorRepository.findByApiId(apiId);
+    }
+
     /**
      * Busca autor por ID com os mangás relacionados
      */

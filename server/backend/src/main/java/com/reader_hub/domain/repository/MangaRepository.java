@@ -18,6 +18,9 @@ public interface MangaRepository extends JpaRepository<Manga, String> {
     Page<Manga> findByStatus(String status, Pageable pageable);
     
     Page<Manga> findByAuthor(Author author, Pageable pageable);
+
+    @Query("SELECT m FROM Manga m WHERE m.apiId = :apiId")
+    Optional<Manga> findByApiId(@Param("apiId") String apiId);
     
     @Query("SELECT m FROM Manga m WHERE m.author.id = :authorId")
     List<Manga> findByAuthorId(@Param("authorId") String authorId);
