@@ -1,5 +1,6 @@
 package com.reader_hub.application.dto;
 
+import com.reader_hub.domain.model.Relationship;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -9,28 +10,37 @@ import java.util.List;
 public class ChapterDto {
     private String id;
     private String type;
-    private ChapterData chapter;
     private ApiChapterAttributes attributes;
+    private List<Relationship> relationships;
 
-
-    @Data
-    public static class ChapterData {
-        private List<String> data; // images
-    }
-    
     @Data
     public static class ApiChapterAttributes {
         private String title;
         private String volume;
         private String chapter;
         private Integer pages;
-        private String status;
-        private String language;
-        private OffsetDateTime publishedAt;
+        private String translatedLanguage;
+        private String uploader;
+        private String externalUrl;
+        private Integer version;
         private OffsetDateTime createdAt;
         private OffsetDateTime updatedAt;
+        private OffsetDateTime publishAt;
         private OffsetDateTime readableAt;
-        private Integer views;
-        private Integer comments;
+    }
+
+    // DTO para resposta do endpoint at-home/server
+    @Data
+    public static class ChapterPagesDto {
+        private String result;
+        private String baseUrl;
+        private ChapterData chapter;
+        
+        @Data
+        public static class ChapterData {
+            private String hash;
+            private List<String> data; // nomes dos arquivos de imagem
+            private List<String> dataSaver; // versão comprimida
+        }
     }
 } 
