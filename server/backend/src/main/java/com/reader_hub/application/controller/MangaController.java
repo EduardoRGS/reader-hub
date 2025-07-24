@@ -8,6 +8,14 @@ import com.reader_hub.application.dto.PaginatedResponseDto;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Manga;
 import com.reader_hub.domain.service.MangaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -25,6 +33,7 @@ import java.util.Optional;
 @RequestMapping("/api/manga")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "📚 Mangás", description = "Operações relacionadas aos mangás")
 public class MangaController {
 
     private final ApiService apiService;
@@ -32,21 +41,44 @@ public class MangaController {
 
     // ================== ENDPOINTS DA API EXTERNA (MangaDx) ==================
 
+    @Operation(
+        summary = "Buscar mangás da API externa", 
+        description = "Obtém uma lista paginada de mangás diretamente da API MangaDX"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista de mangás obtida com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Parâmetros inválidos"),
+        @ApiResponse(responseCode = "502", description = "Erro de comunicação com API externa")
+    })
+    @Tag(name = "🌐 API Externa")
     @GetMapping("/external")
     public PaginatedDto<MangaDto> getExternalMangas(
+            @Parameter(description = "Número máximo de resultados", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{common.limit.range}")
             @Max(value = 100, message = "{common.limit.range}")
             Integer limit,
             
+            @Parameter(description = "Número de itens a pular", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{common.offset.positive}")
             Integer offset) {
         return apiService.getMangas(limit, offset);
     }
 
+    @Operation(
+        summary = "Buscar manga específico da API externa",
+        description = "Obtém os detalhes de um manga específico da API MangaDX pelo ID"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Manga encontrado"),
+        @ApiResponse(responseCode = "404", description = "Manga não encontrado"),
+        @ApiResponse(responseCode = "400", description = "ID inválido")
+    })
+    @Tag(name = "🌐 API Externa")
     @GetMapping("/external/{id}")
     public Optional<MangaDto> getExternalMangaById(
+            @Parameter(description = "ID único do manga na API MangaDX", example = "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0")
             @PathVariable 
             @NotBlank(message = "{manga.id.required}")
             String id) {
@@ -55,19 +87,56 @@ public class MangaController {
 
     // ================== ENDPOINTS DO BANCO LOCAL ==================
 
+    @Operation(
+        summary = "Listar mangás do banco local",
+        description = "Obtém uma lista paginada de mangás armazenados no banco de dados local"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Lista de mangás obtida com sucesso",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PaginatedResponseDto.class),
+                examples = @ExampleObject(
+                    name = "Resposta de exemplo",
+                    value = """
+                    {
+                      "content": [
+                        {
+                          "id": "123e4567-e89b-12d3-a456-426614174000",
+                          "title": {"pt-br": "Solo Leveling", "en": "Solo Leveling"},
+                          "status": "completed",
+                          "year": "2018",
+                          "rating": 9.5,
+                          "totalChapters": 179
+                        }
+                      ],
+                      "totalElements": 1,
+                      "totalPages": 1,
+                      "size": 20,
+                      "number": 0
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(responseCode = "400", description = "Parâmetros inválidos")
+    })
     @GetMapping
     public ResponseEntity<PaginatedResponseDto<MangaResponseDto>> getLocalMangas(
+            @Parameter(description = "Número máximo de resultados por página", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{common.limit.range}")
             @Max(value = 100, message = "{common.limit.range}")
             Integer limit,
             
+            @Parameter(description = "Número de itens a pular para paginação", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{common.offset.positive}")
             Integer offset) {
         Page<Manga> mangas = mangaService.findAll(PageRequest.of(offset / limit, limit));
         
-        // Usar o novo DTO padronizado com transformação
         PaginatedResponseDto<MangaResponseDto> response = PaginatedResponseDto.fromPage(
             mangas, MangaResponseDto::fromEntity
         );
@@ -75,8 +144,18 @@ public class MangaController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(
+        summary = "Buscar manga por ID",
+        description = "Obtém os detalhes de um manga específico do banco local"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Manga encontrado"),
+        @ApiResponse(responseCode = "404", description = "Manga não encontrado"),
+        @ApiResponse(responseCode = "400", description = "ID inválido")
+    })
     @GetMapping("/local/{id}")
     public ResponseEntity<MangaResponseDto> getLocalMangaById(
+            @Parameter(description = "ID único do manga no banco local", example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable 
             @NotBlank(message = "{manga.id.required}")
             String id) {
@@ -87,8 +166,13 @@ public class MangaController {
         return ResponseEntity.notFound().build();
     }
 
+    @Operation(
+        summary = "Buscar manga com autor",
+        description = "Obtém os detalhes de um manga com as informações completas do autor"
+    )
     @GetMapping("/local/with-author/{id}")
     public ResponseEntity<MangaResponseDto> getLocalMangaWithAuthor(
+            @Parameter(description = "ID único do manga", example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable 
             @NotBlank(message = "{manga.id.required}")
             String id) {
@@ -101,21 +185,59 @@ public class MangaController {
 
     // ================== ENDPOINTS DE CRIAÇÃO ==================
 
-    /**
-     * Criar manga via API externa (usando MangaDto da API)
-     */
+    @Operation(
+        summary = "Criar manga via API externa",
+        description = "Cria um novo manga no banco local usando dados da API MangaDX"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Manga criado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+        @ApiResponse(responseCode = "409", description = "Manga já existe")
+    })
     @PostMapping("/from-api")
     public ResponseEntity<MangaResponseDto> createMangaFromApi(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Dados do manga obtidos da API MangaDX",
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = MangaDto.class)
+                )
+            )
             @Valid @RequestBody MangaDto mangaDto) {
         Manga manga = mangaService.createManga(mangaDto);
         return ResponseEntity.ok(MangaResponseDto.fromEntity(manga));
     }
 
-    /**
-     * Criar manga manualmente (usando CreateMangaDto com validações)
-     */
+    @Operation(
+        summary = "Criar manga manualmente",
+        description = "Cria um novo manga no banco local com dados fornecidos pelo usuário"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Manga criado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos ou faltantes"),
+        @ApiResponse(responseCode = "404", description = "Autor não encontrado")
+    })
     @PostMapping("/manual")
     public ResponseEntity<MangaResponseDto> createMangaManual(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Dados para criação manual do manga",
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = CreateMangaDto.class),
+                    examples = @ExampleObject(
+                        name = "Exemplo de criação",
+                        value = """
+                        {
+                          "title": "Meu Manga Incrível",
+                          "description": "Uma história épica sobre aventuras.",
+                          "status": "ongoing",
+                          "year": "2024",
+                          "authorId": "123e4567-e89b-12d3-a456-426614174000"
+                        }
+                        """
+                    )
+                )
+            )
             @Valid @RequestBody CreateMangaDto createMangaDto) {
         Manga manga = mangaService.createMangaManual(createMangaDto);
         return ResponseEntity.ok(MangaResponseDto.fromEntity(manga));
@@ -123,47 +245,24 @@ public class MangaController {
 
     // ================== ENDPOINTS DE BUSCA E FILTROS ==================
 
-    /**
-     * Busca temporariamente desabilitada devido a problemas com query HQL
-     * TODO: Implementar busca robusta
-     */
-    /*
-    @GetMapping("/search")
-    public ResponseEntity<PaginatedResponseDto<MangaResponseDto>> searchMangas(
-            @RequestParam 
-            @NotBlank(message = "{common.search.term.required}")
-            String query,
-            
-            @RequestParam(defaultValue = "20") 
-            @Min(value = 1, message = "{common.limit.range}")
-            @Max(value = 100, message = "{common.limit.range}")
-            Integer limit,
-            
-            @RequestParam(defaultValue = "0") 
-            @Min(value = 0, message = "{common.offset.positive}")
-            Integer offset) {
-        
-        Page<Manga> mangas = mangaService.searchMangasByTitle(query, PageRequest.of(offset / limit, limit));
-        
-        PaginatedResponseDto<MangaResponseDto> response = PaginatedResponseDto.fromPage(
-            mangas, MangaResponseDto::fromEntity
-        );
-        
-        return ResponseEntity.ok(response);
-    }
-    */
-
+    @Operation(
+        summary = "Filtrar mangás por status",
+        description = "Obtém mangás filtrados por status (ongoing, completed, hiatus, cancelled)"
+    )
     @GetMapping("/by-status/{status}")
     public ResponseEntity<PaginatedResponseDto<MangaResponseDto>> getMangasByStatus(
+            @Parameter(description = "Status do manga", example = "ongoing", schema = @Schema(allowableValues = {"ongoing", "completed", "hiatus", "cancelled"}))
             @PathVariable 
             @NotBlank(message = "{common.status.required}")
             String status,
             
+            @Parameter(description = "Número máximo de resultados", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{common.limit.range}")
             @Max(value = 100, message = "{common.limit.range}")
             Integer limit,
             
+            @Parameter(description = "Número de itens a pular", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{common.offset.positive}")
             Integer offset) {
@@ -177,17 +276,24 @@ public class MangaController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(
+        summary = "Filtrar mangás por ano",
+        description = "Obtém mangás filtrados por ano de publicação"
+    )
     @GetMapping("/by-year/{year}")
     public ResponseEntity<PaginatedResponseDto<MangaResponseDto>> getMangasByYear(
+            @Parameter(description = "Ano de publicação", example = "2024")
             @PathVariable 
             @NotBlank(message = "{common.year.required}")
             String year,
             
+            @Parameter(description = "Número máximo de resultados", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{common.limit.range}")
             @Max(value = 100, message = "{common.limit.range}")
             Integer limit,
             
+            @Parameter(description = "Número de itens a pular", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{common.offset.positive}")
             Integer offset) {

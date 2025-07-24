@@ -7,6 +7,14 @@ import com.reader_hub.domain.service.AuthorService;
 import com.reader_hub.domain.service.ChapterService;
 import com.reader_hub.domain.service.DataPopulationService;
 import com.reader_hub.domain.service.MangaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +32,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 @Validated
+@Tag(name = "🔄 População", description = "População de dados da API externa")
 public class PopulationController {
 
     private final DataPopulationService dataPopulationService;
@@ -31,16 +40,43 @@ public class PopulationController {
     private final AuthorService authorService;
     private final ChapterService chapterService;
 
-    /**
-     * Popula o banco com mangas populares da API MangaDX
-     */
+    @Operation(
+        summary = "Popular mangás populares",
+        description = "Popula o banco de dados com mangás populares da API MangaDX"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "População realizada com sucesso",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = """
+                    {
+                      "status": "success",
+                      "message": "População de mangás populares concluída - 10 mangás e 15 autores salvos",
+                      "totalFound": 86363,
+                      "mangasSaved": 10,
+                      "authorsSaved": 15,
+                      "limit": 10,
+                      "offset": 0
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(responseCode = "400", description = "Parâmetros inválidos"),
+        @ApiResponse(responseCode = "502", description = "Erro de comunicação com API externa")
+    })
     @PostMapping("/popular-mangas")
     public ResponseEntity<Map<String, Object>> populatePopularMangas(
+            @Parameter(description = "Número máximo de mangás para importar (1-100)", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{population.limit.range}")
             @Max(value = 100, message = "{population.limit.range}")
             Integer limit,
             
+            @Parameter(description = "Número de itens a pular na API externa", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{population.offset.positive}")
             Integer offset) {
@@ -58,16 +94,19 @@ public class PopulationController {
         }
     }
 
-    /**
-     * Popula o banco com mangas recentes da API MangaDX
-     */
+    @Operation(
+        summary = "Popular mangás recentes",
+        description = "Popula o banco de dados com mangás recentemente atualizados da API MangaDX"
+    )
     @PostMapping("/recent-mangas")
     public ResponseEntity<Map<String, Object>> populateRecentMangas(
+            @Parameter(description = "Número máximo de mangás para importar", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{population.limit.range}")
             @Max(value = 100, message = "{population.limit.range}")
             Integer limit,
             
+            @Parameter(description = "Número de itens a pular na API externa", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{population.offset.positive}")
             Integer offset) {
@@ -79,27 +118,31 @@ public class PopulationController {
             return ResponseEntity.ok(createSuccessResponse(result, limit, offset, null));
             
         } catch (Exception e) {
-            log.error("Erro durante população de mangas recentes", e);
+            log.error("Erro durante população de mangás recentes", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(
                 "Erro durante população: " + e.getMessage()));
         }
     }
 
-    /**
-     * Busca mangas por título e salva no banco
-     */
+    @Operation(
+        summary = "Buscar e salvar mangás por título",
+        description = "Busca mangás por título na API MangaDX e salva no banco local"
+    )
     @PostMapping("/search-and-save")
     public ResponseEntity<Map<String, Object>> searchAndSaveMangas(
+            @Parameter(description = "Título do manga para buscar", example = "Solo Leveling")
             @RequestParam 
             @NotBlank(message = "{population.title.required}")
             @Size(min = 2, max = 100, message = "{population.title.size}")
             String title,
             
+            @Parameter(description = "Número máximo de resultados", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{population.limit.range}")
             @Max(value = 100, message = "{population.limit.range}")
             Integer limit,
             
+            @Parameter(description = "Número de itens a pular", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{population.offset.positive}")
             Integer offset) {
@@ -117,11 +160,13 @@ public class PopulationController {
         }
     }
 
-    /**
-     * Popula capítulos de um manga específico
-     */
+    @Operation(
+        summary = "Popular capítulos de um manga",
+        description = "Popula todos os capítulos disponíveis de um manga específico"
+    )
     @PostMapping("/chapters/{mangaId}")
     public ResponseEntity<Map<String, Object>> populateChaptersForManga(
+            @Parameter(description = "ID único do manga no banco local", example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable 
             @NotBlank(message = "{manga.id.required}")
             String mangaId) {
@@ -144,16 +189,19 @@ public class PopulationController {
         }
     }
 
-    /**
-     * Popula autores do banco de dados
-     */
+    @Operation(
+        summary = "Popular autores",
+        description = "Popula o banco de dados com autores da API MangaDX"
+    )
     @PostMapping("/authors")
     public ResponseEntity<Map<String, Object>> populateAuthors(
+            @Parameter(description = "Número máximo de autores para importar", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{population.limit.range}")
             @Max(value = 100, message = "{population.limit.range}")
             Integer limit,
             
+            @Parameter(description = "Número de itens a pular", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{population.offset.positive}")
             Integer offset) {
@@ -171,9 +219,29 @@ public class PopulationController {
         }
     }
 
-    /**
-     * Obtém estatísticas do banco de dados - OTIMIZADO
-     */
+    @Operation(
+        summary = "Obter estatísticas do banco",
+        description = "Retorna estatísticas atuais do banco de dados (total de mangás, autores e capítulos)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Estatísticas obtidas com sucesso",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = """
+                    {
+                      "totalMangas": 150,
+                      "totalAuthors": 75,
+                      "totalChapters": 2500
+                    }
+                    """
+                )
+            )
+        )
+    })
+    @Tag(name = "📊 Estatísticas")
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getDatabaseStats() {
         try {
@@ -196,20 +264,24 @@ public class PopulationController {
         }
     }
 
-    /**
-     * Operação completa: popula mangas populares + seus capítulos
-     */
+    @Operation(
+        summary = "População completa",
+        description = "Realiza uma população completa: mangás populares + seus capítulos"
+    )
     @PostMapping("/complete-popular")
     public ResponseEntity<Map<String, Object>> populateCompletePopular(
+            @Parameter(description = "Número máximo de mangás para importar (1-50)", example = "10")
             @RequestParam(defaultValue = "10") 
             @Min(value = 1, message = "{population.manga.limit.range}")
             @Max(value = 50, message = "{population.manga.limit.range}")
             Integer mangaLimit,
             
+            @Parameter(description = "Número de itens a pular", example = "0")
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{population.offset.positive}")
             Integer offset,
             
+            @Parameter(description = "Se deve incluir capítulos na população", example = "true")
             @RequestParam(defaultValue = "true") 
             @NotNull(message = "{population.include.chapters.required}")
             Boolean includeChapters) {
