@@ -6,6 +6,7 @@ import com.reader_hub.application.dto.PaginatedDto;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Chapter;
 import com.reader_hub.domain.model.Manga;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,25 +27,26 @@ public class DataPopulationService {
     private final ChapterService chapterService;
 
     /**
-     * Resultado da população de dados
+     * Resultado da população de dados usando Lombok
      */
+    @Data
+    @RequiredArgsConstructor
     public static class PopulationResult {
         private final int mangasSaved;
         private final int authorsSaved;
         private final long totalFound;
         private final String message;
+    }
 
-        public PopulationResult(int mangasSaved, int authorsSaved, long totalFound, String message) {
-            this.mangasSaved = mangasSaved;
-            this.authorsSaved = authorsSaved;
-            this.totalFound = totalFound;
-            this.message = message;
-        }
-
-        public int getMangasSaved() { return mangasSaved; }
-        public int getAuthorsSaved() { return authorsSaved; }
-        public long getTotalFound() { return totalFound; }
-        public String getMessage() { return message; }
+    /**
+     * Resultado da população completa usando Lombok
+     */
+    @Data
+    @RequiredArgsConstructor
+    public static class PopulationCompleteResult {
+        private final PopulationResult mangaResult;
+        private final int totalChaptersSaved;
+        private final Boolean includeChapters;
     }
 
     /**
@@ -195,24 +197,5 @@ public class DataPopulationService {
         }
         
         return new PopulationCompleteResult(mangaResult, totalChaptersSaved, includeChapters);
-    }
-
-    /**
-     * Resultado da população completa
-     */
-    public static class PopulationCompleteResult {
-        private final PopulationResult mangaResult;
-        private final int totalChaptersSaved;
-        private final Boolean includeChapters;
-
-        public PopulationCompleteResult(PopulationResult mangaResult, int totalChaptersSaved, Boolean includeChapters) {
-            this.mangaResult = mangaResult;
-            this.totalChaptersSaved = totalChaptersSaved;
-            this.includeChapters = includeChapters;
-        }
-
-        public PopulationResult getMangaResult() { return mangaResult; }
-        public int getTotalChaptersSaved() { return totalChaptersSaved; }
-        public Boolean getIncludeChapters() { return includeChapters; }
     }
 } 

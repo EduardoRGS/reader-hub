@@ -34,7 +34,7 @@ public class MangaService {
     /**
      * Salva um novo mangá no banco de dados
      */
-    @Transactional()
+    @Transactional
     public Manga saveManga(Manga manga) {
         log.info("Salvando mangá: {}", manga.getId());
         
@@ -255,8 +255,62 @@ public class MangaService {
         return mangaRepository.count();
     }
 
-    @Autowired
-    public ApiService setApiService(ApiService apiService) {
-        return apiService;
+    /**
+     * Cria um mangá manualmente (não via API externa)
+     */
+    @Transactional
+    public Manga createMangaManual(com.reader_hub.application.dto.CreateMangaDto createMangaDto) {
+        log.info("Criando mangá manual: {}", createMangaDto.getTitle());
+        
+        // Buscar autor se especificado
+        Author author = null;
+        if (createMangaDto.getAuthorId() != null) {
+            Optional<Author> authorOpt = authorService.findById(createMangaDto.getAuthorId());
+            if (authorOpt.isEmpty()) {
+                throw new IllegalArgumentException("Autor não encontrado com ID: " + createMangaDto.getAuthorId());
+            }
+            author = authorOpt.get();
+        }
+        
+        // Criar entidade manga
+        Manga manga = new Manga();
+        manga.setTitle(createMangaDto.getTitles() != null && !createMangaDto.getTitles().isEmpty() 
+                        ? createMangaDto.getTitles() 
+                        : Map.of("pt-br", createMangaDto.getTitle()));
+        manga.setDescription(createMangaDto.getDescriptions() != null && !createMangaDto.getDescriptions().isEmpty() 
+                            ? createMangaDto.getDescriptions() 
+                            : (createMangaDto.getDescription() != null 
+                               ? Map.of("pt-br", createMangaDto.getDescription()) 
+                               : Map.of()));
+        manga.setStatus(createMangaDto.getStatus());
+        manga.setYear(createMangaDto.getYear());
+        manga.setViews(createMangaDto.getViews());
+        manga.setFollows(createMangaDto.getFollows());
+        manga.setRating(createMangaDto.getRating());
+        manga.setRatingCount(createMangaDto.getRatingCount());
+        manga.setAuthor(author);
+        manga.setCreatedAt(java.time.OffsetDateTime.now());
+        manga.setUpdatedAt(java.time.OffsetDateTime.now());
+        
+        return saveManga(manga);
     }
+
+    /**
+     * Busca mangás por título (busca em qualquer idioma)
+     * Temporariamente desabilitada devido a problemas com query HQL
+     * TODO: Implementar busca robusta
+     */
+    /*
+    @Transactional(readOnly = true)
+    public Page<Manga> searchMangasByTitle(String query, Pageable pageable) {
+        try {
+            // Usar query nativa que definitivamente funciona com H2
+            return mangaRepository.findByTitleContainingIgnoreCase(query, pageable);
+        } catch (Exception e) {
+            log.warn("Erro na busca por título, retornando todos os mangás: {}", e.getMessage());
+            // Fallback: retornar todos os mangás se a busca não funcionar
+            return mangaRepository.findAll(pageable);
+        }
+    }
+    */
 } 

@@ -42,4 +42,22 @@ public interface MangaRepository extends JpaRepository<Manga, String> {
     
     @Query("SELECT m FROM Manga m WHERE m.year = :year")
     Page<Manga> findByYear(@Param("year") String year, Pageable pageable);
+    
+    /**
+     * Queries de busca por título temporariamente desabilitadas
+     * devido a problemas de compatibilidade com H2 e Map<String, String>
+     * TODO: Implementar busca robusta
+     */
+    
+    /*
+    @Query(value = "SELECT DISTINCT m.* FROM mangas m " +
+                   "LEFT JOIN manga_titles mt ON m.id = mt.manga_id " +
+                   "WHERE LOWER(mt.title) LIKE LOWER(CONCAT('%', :query, '%'))", 
+           nativeQuery = true)
+    Page<Manga> findByTitleContainingIgnoreCase(@Param("query") String query, Pageable pageable);
+    
+    @Query("SELECT m FROM Manga m WHERE m.id IN " +
+           "(SELECT mt.manga.id FROM Manga mt WHERE SIZE(mt.title) > 0)")
+    Page<Manga> findAllWithTitles(Pageable pageable);
+    */
 }

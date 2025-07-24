@@ -6,9 +6,13 @@ import com.reader_hub.application.dto.PaginatedDto;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Author;
 import com.reader_hub.domain.service.AuthorService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,27 +20,38 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/author")
+@RequiredArgsConstructor
+@Validated
 public class AuthorController {
 
     private final ApiService apiService;
-    private AuthorService authorService;
+    private final AuthorService authorService;
 
-    public AuthorController(ApiService apiService) {
-        this.apiService = apiService;
-    }
-
-    // Endpoints da API Externa (MangaDx)
+    // ================== ENDPOINTS DA API EXTERNA (MangaDx) ==================
+    
     @GetMapping("/external/{id}")
-    public Optional<AuthorDto> getExternalAuthorById(@PathVariable String id) {
+    public Optional<AuthorDto> getExternalAuthorById(
+            @PathVariable 
+            @NotBlank(message = "ID do autor é obrigatório")
+            String id) {
         return apiService.getAuthorById(id);
     }
 
     @GetMapping("/external")
-    public PaginatedDto<AuthorDto> getExternalAuthors(@RequestParam int limit, @RequestParam int offset) {
+    public PaginatedDto<AuthorDto> getExternalAuthors(
+            @RequestParam(defaultValue = "20") 
+            @Min(value = 1, message = "{common.limit.range}")
+            @Max(value = 100, message = "{common.limit.range}")
+            Integer limit, 
+            
+            @RequestParam(defaultValue = "0") 
+            @Min(value = 0, message = "{common.offset.positive}")
+            Integer offset) {
         return apiService.getAuthors(limit, offset);
     }
 
-    // Endpoints do Banco Local - retornando DTOs
+    // ================== ENDPOINTS DO BANCO LOCAL ==================
+    
     @GetMapping("/listAll")
     public List<AuthorResponseDto> getAllAuthors() {
         List<Author> authors = authorService.findAll();
@@ -44,7 +59,10 @@ public class AuthorController {
     }
 
     @GetMapping("/local/{id}")
-    public ResponseEntity<AuthorResponseDto> getLocalAuthorById(@PathVariable String id) {
+    public ResponseEntity<AuthorResponseDto> getLocalAuthorById(
+            @PathVariable 
+            @NotBlank(message = "ID do autor é obrigatório")
+            String id) {
         Optional<Author> author = authorService.findById(id);
         if (author.isPresent()) {
             return ResponseEntity.ok(AuthorResponseDto.fromEntity(author.get()));
@@ -56,10 +74,5 @@ public class AuthorController {
     public ResponseEntity<AuthorResponseDto> createAuthor(@RequestBody AuthorDto authorDto) {
         Author author = authorService.createAuthor(authorDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(AuthorResponseDto.fromEntity(author));
-    }
-
-    @Autowired
-    public void setAuthorService(AuthorService authorService) {
-        this.authorService = authorService;
     }
 }

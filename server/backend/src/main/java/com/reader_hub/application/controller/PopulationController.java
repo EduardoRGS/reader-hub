@@ -1,14 +1,18 @@
 package com.reader_hub.application.controller;
 
+import com.reader_hub.application.dto.PopulationRequestDto;
 import com.reader_hub.domain.model.Author;
 import com.reader_hub.domain.model.Manga;
 import com.reader_hub.domain.service.AuthorService;
 import com.reader_hub.domain.service.ChapterService;
 import com.reader_hub.domain.service.DataPopulationService;
 import com.reader_hub.domain.service.MangaService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -19,6 +23,7 @@ import java.util.Map;
 @RequestMapping("/api/populate")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class PopulationController {
 
     private final DataPopulationService dataPopulationService;
@@ -31,8 +36,14 @@ public class PopulationController {
      */
     @PostMapping("/popular-mangas")
     public ResponseEntity<Map<String, Object>> populatePopularMangas(
-            @RequestParam(defaultValue = "50") Integer limit,
-            @RequestParam(defaultValue = "0") Integer offset) {
+            @RequestParam(defaultValue = "20") 
+            @Min(value = 1, message = "{population.limit.range}")
+            @Max(value = 100, message = "{population.limit.range}")
+            Integer limit,
+            
+            @RequestParam(defaultValue = "0") 
+            @Min(value = 0, message = "{population.offset.positive}")
+            Integer offset) {
         
         try {
             DataPopulationService.PopulationResult result = 
@@ -52,8 +63,14 @@ public class PopulationController {
      */
     @PostMapping("/recent-mangas")
     public ResponseEntity<Map<String, Object>> populateRecentMangas(
-            @RequestParam(defaultValue = "50") Integer limit,
-            @RequestParam(defaultValue = "0") Integer offset) {
+            @RequestParam(defaultValue = "20") 
+            @Min(value = 1, message = "{population.limit.range}")
+            @Max(value = 100, message = "{population.limit.range}")
+            Integer limit,
+            
+            @RequestParam(defaultValue = "0") 
+            @Min(value = 0, message = "{population.offset.positive}")
+            Integer offset) {
         
         try {
             DataPopulationService.PopulationResult result = 
@@ -73,9 +90,19 @@ public class PopulationController {
      */
     @PostMapping("/search-and-save")
     public ResponseEntity<Map<String, Object>> searchAndSaveMangas(
-            @RequestParam String title,
-            @RequestParam(defaultValue = "20") Integer limit,
-            @RequestParam(defaultValue = "0") Integer offset) {
+            @RequestParam 
+            @NotBlank(message = "{population.title.required}")
+            @Size(min = 2, max = 100, message = "{population.title.size}")
+            String title,
+            
+            @RequestParam(defaultValue = "20") 
+            @Min(value = 1, message = "{population.limit.range}")
+            @Max(value = 100, message = "{population.limit.range}")
+            Integer limit,
+            
+            @RequestParam(defaultValue = "0") 
+            @Min(value = 0, message = "{population.offset.positive}")
+            Integer offset) {
         
         try {
             DataPopulationService.PopulationResult result = 
@@ -94,7 +121,11 @@ public class PopulationController {
      * Popula capítulos de um manga específico
      */
     @PostMapping("/chapters/{mangaId}")
-    public ResponseEntity<Map<String, Object>> populateChaptersForManga(@PathVariable String mangaId) {
+    public ResponseEntity<Map<String, Object>> populateChaptersForManga(
+            @PathVariable 
+            @NotBlank(message = "{manga.id.required}")
+            String mangaId) {
+        
         try {
             int chaptersSaved = dataPopulationService.populateChaptersForManga(mangaId);
             
@@ -118,8 +149,14 @@ public class PopulationController {
      */
     @PostMapping("/authors")
     public ResponseEntity<Map<String, Object>> populateAuthors(
-            @RequestParam(defaultValue = "50") Integer limit,
-            @RequestParam(defaultValue = "0") Integer offset) {
+            @RequestParam(defaultValue = "20") 
+            @Min(value = 1, message = "{population.limit.range}")
+            @Max(value = 100, message = "{population.limit.range}")
+            Integer limit,
+            
+            @RequestParam(defaultValue = "0") 
+            @Min(value = 0, message = "{population.offset.positive}")
+            Integer offset) {
         
         try {
             DataPopulationService.PopulationResult result = 
@@ -164,9 +201,18 @@ public class PopulationController {
      */
     @PostMapping("/complete-popular")
     public ResponseEntity<Map<String, Object>> populateCompletePopular(
-            @RequestParam(defaultValue = "20") Integer mangaLimit,
-            @RequestParam(defaultValue = "0") Integer offset,
-            @RequestParam(defaultValue = "true") Boolean includeChapters) {
+            @RequestParam(defaultValue = "10") 
+            @Min(value = 1, message = "{population.manga.limit.range}")
+            @Max(value = 50, message = "{population.manga.limit.range}")
+            Integer mangaLimit,
+            
+            @RequestParam(defaultValue = "0") 
+            @Min(value = 0, message = "{population.offset.positive}")
+            Integer offset,
+            
+            @RequestParam(defaultValue = "true") 
+            @NotNull(message = "{population.include.chapters.required}")
+            Boolean includeChapters) {
         
         try {
             DataPopulationService.PopulationCompleteResult result = 
