@@ -19,4 +19,8 @@ public interface ApiService {
     Optional<ChapterDto> getChapterById(String id);
     List<ChapterDto> getChaptersByMangaId(String mangaId, Integer limit, Integer offset);
     List<String> getChapterPages(String chapterId);
+    
+    // Métodos adicionais para busca especializada
+    PaginatedDto<MangaDto> getPopularMangas(Integer limit, Integer offset);
+    PaginatedDto<MangaDto> getRecentMangas(Integer limit, Integer offset);
 }
