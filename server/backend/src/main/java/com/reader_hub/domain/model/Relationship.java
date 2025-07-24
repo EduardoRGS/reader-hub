@@ -7,15 +7,20 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@Table(name = "relationship")
+@Table(name = "relationships")
 @NoArgsConstructor
 @AllArgsConstructor
 public class Relationship {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    private String internalId;
+    
+    @Column(nullable = false)
+    private String id; // ID do recurso relacionado (manga, author, etc.)
 
     @Column(nullable = false)
-    private String type;
+    private String type; // tipo de relacionamento (manga, author, artist, cover_art, etc.)
+    
+    private String related; // usado em alguns casos especiais
 }

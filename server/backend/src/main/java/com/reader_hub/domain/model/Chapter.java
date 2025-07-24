@@ -1,5 +1,6 @@
 package com.reader_hub.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,10 +14,13 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Chapter {
     
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+    private String apiId;
     
     private String title;
     private String volume;
@@ -47,6 +51,7 @@ public class Chapter {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manga_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "chapters"})
     private Manga manga;
     
     @PrePersist
