@@ -2,6 +2,7 @@ package com.reader_hub.domain.service;
 
 import com.reader_hub.application.dto.AuthorDto;
 import com.reader_hub.domain.model.Author;
+import com.reader_hub.domain.model.Language;
 import com.reader_hub.domain.repository.AuthorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -25,8 +27,13 @@ public class AuthorService {
     public Author saveAuthor(Author author) {
         log.info("Salvando autor: {}", author.getName());
         
-        if (authorRepository.existsByName(author.getName())) {
-            throw new IllegalArgumentException("Já existe um autor com este nome: " + author.getName());
+        // Verificar se já existe por apiId antes de salvar
+        if (author.getApiId() != null) {
+            Optional<Author> existing = authorRepository.findByApiId(author.getApiId());
+            if (existing.isPresent()) {
+                log.info("Autor já existe com apiId: {}", author.getApiId());
+                return existing.get();
+            }
         }
         
         return authorRepository.save(author);
@@ -38,10 +45,25 @@ public class AuthorService {
     public Author createAuthor(AuthorDto authorDto) {
         log.info("Criando novo autor - Nome: {}", authorDto.getAttributes().getName());
         
+        // Verificar se autor já existe por apiId para evitar duplicatas
+        Optional<Author> existingAuthor = authorRepository.findByApiId(authorDto.getId());
+        if (existingAuthor.isPresent()) {
+            log.info("Autor já existe com apiId: {}", authorDto.getId());
+            return existingAuthor.get();
+        }
+        
         var author = new Author();
         author.setApiId(authorDto.getId());
         author.setName(authorDto.getAttributes().getName());
-        author.setBiography(authorDto.getAttributes().getBiography());
+        
+        // Converter corretamente Map<String, String> para Language
+        if (authorDto.getAttributes().getBiography() != null) {
+            Language biography = new Language();
+            Map<String, String> bioMap = authorDto.getAttributes().getBiography();
+            biography.setEn(bioMap.get("en"));
+            biography.setPt_BR(bioMap.get("pt-br"));
+            author.setBiography(biography);
+        }
         
         return saveAuthor(author);
     }
@@ -131,5 +153,13 @@ public class AuthorService {
     @Transactional(readOnly = true)
     public boolean existsByName(String name) {
         return authorRepository.existsByName(name);
+    }
+
+    /**
+     * Conta total de autores - OTIMIZADO para estatísticas
+     */
+    @Transactional(readOnly = true)
+    public long countAll() {
+        return authorRepository.count();
     }
 } 

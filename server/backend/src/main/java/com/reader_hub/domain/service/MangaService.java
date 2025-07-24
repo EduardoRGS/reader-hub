@@ -65,9 +65,12 @@ public class MangaService {
                 .filter(e -> List.of("pt-br", "en").contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        var descriptionFiltered = dto.getAttributes().getDescription().entrySet().stream()
-                .filter(e -> e.getKey().equals("en") || e.getKey().equals("pt-br"))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<String, String> descriptionFiltered = Map.of();
+        if (dto.getAttributes().getDescription() != null) {
+            descriptionFiltered = dto.getAttributes().getDescription().entrySet().stream()
+                    .filter(e -> e.getKey().equals("en") || e.getKey().equals("pt-br"))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
 
         Manga manga = new Manga();
         manga.setApiId(dto.getId());
@@ -77,14 +80,19 @@ public class MangaService {
         manga.setYear(dto.getAttributes().getYear());
         
         // Se foi informado um autor, buscar e associar
-        var relationAuthor = Arrays.stream(dto.getRelationships())
-                .filter(type -> type.getType().equals("author")).findFirst().orElse(null);
-        if (relationAuthor != null) {
-            var author = authorService.findByApiId(relationAuthor.getId());
-            if (author.isPresent()) {
-                manga.setAuthor(author.get());
-            } else {
-                throw new IllegalArgumentException("Autor não encontrado com ID: " + relationAuthor.getType());
+        if (dto.getRelationships() != null) {
+            var relationAuthor = dto.getRelationships().stream()
+                    .filter(rel -> "author".equals(rel.getType()))
+                    .findFirst()
+                    .orElse(null);
+            
+            if (relationAuthor != null) {
+                var author = authorService.findByApiId(relationAuthor.getId());
+                if (author.isPresent()) {
+                    manga.setAuthor(author.get());
+                } else {
+                    log.warn("Autor não encontrado com ID: {}", relationAuthor.getId());
+                }
             }
         }
 
@@ -237,6 +245,14 @@ public class MangaService {
             return updateManga(manga);
         }
         throw new IllegalArgumentException("Mangá não encontrado com ID: " + id);
+    }
+
+    /**
+     * Conta total de mangás - OTIMIZADO para estatísticas
+     */
+    @Transactional(readOnly = true)
+    public long countAll() {
+        return mangaRepository.count();
     }
 
     @Autowired

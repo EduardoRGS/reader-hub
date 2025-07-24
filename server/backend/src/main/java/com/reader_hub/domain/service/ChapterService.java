@@ -1,5 +1,7 @@
 package com.reader_hub.domain.service;
 
+import com.reader_hub.application.dto.ChapterDto;
+import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Chapter;
 import com.reader_hub.domain.model.Manga;
 import com.reader_hub.domain.repository.ChapterRepository;
@@ -20,60 +22,62 @@ import java.util.Optional;
 public class ChapterService {
     
     private final ChapterRepository chapterRepository;
+    private final ApiService apiService;
     private final MangaService mangaService;
     
     /**
      * Salva um novo capítulo no banco de dados
      */
     public Chapter saveChapter(Chapter chapter) {
-        log.info("Salvando capítulo: {} do mangá: {}", chapter.getChapter(), 
-                chapter.getManga() != null ? chapter.getManga().getId() : "N/A");
+        log.info("Salvando capítulo: {}", chapter.getTitle());
         
-        // Validar se o mangá existe caso tenha sido especificado
+        // Validar se o manga existe
         if (chapter.getManga() != null && chapter.getManga().getId() != null) {
             if (!mangaService.existsById(chapter.getManga().getId())) {
-                throw new IllegalArgumentException("Mangá não encontrado com ID: " + chapter.getManga().getId());
+                throw new IllegalArgumentException("Manga não encontrado com ID: " + chapter.getManga().getId());
             }
         }
         
-        return chapterRepository.save(chapter);
+        var saved = chapterRepository.save(chapter);
+        log.info("Capítulo salvo com ID interno: {} e apiId: {}", saved.getId(), saved.getApiId());
+        return saved;
     }
     
     /**
      * Cria um novo capítulo
      */
-    public Chapter createChapter(String id, String title, String chapterNumber, String mangaId) {
-        log.info("Criando novo capítulo - ID: {}, Número: {}, Mangá ID: {}", id, chapterNumber, mangaId);
+    public Chapter createChapter(ChapterDto dto, Manga manga) {
+        // Verificar se o capítulo já existe
+        var existing = chapterRepository.findByMangaIdAndChapterNumber(
+            manga.getId(), dto.getAttributes().getChapter());
+        if (existing.isPresent()) {
+            log.info("Capítulo já existe: {}", dto.getId());
+            return existing.get();
+        }
         
         Chapter chapter = new Chapter();
-        chapter.setId(id);
-        chapter.setTitle(title);
-        chapter.setChapter(chapterNumber);
+        chapter.setApiId(dto.getId());
+        chapter.setTitle(dto.getAttributes().getTitle());
+        chapter.setVolume(dto.getAttributes().getVolume());
+        chapter.setChapter(dto.getAttributes().getChapter());
+        chapter.setPages(dto.getAttributes().getPages());
+        chapter.setLanguage(dto.getAttributes().getTranslatedLanguage());
+        chapter.setPublishedAt(dto.getAttributes().getPublishAt());
+        chapter.setCreatedAt(dto.getAttributes().getCreatedAt());
+        chapter.setUpdatedAt(dto.getAttributes().getUpdatedAt());
+        chapter.setReadableAt(dto.getAttributes().getReadableAt());
+        chapter.setManga(manga);
         
-        // Se foi informado um mangá, buscar e associar
-        if (mangaId != null) {
-            Optional<Manga> manga = mangaService.findById(mangaId);
-            if (manga.isPresent()) {
-                chapter.setManga(manga.get());
-            } else {
-                throw new IllegalArgumentException("Mangá não encontrado com ID: " + mangaId);
-            }
+        // Buscar páginas do capítulo
+        try {
+            List<String> pages = apiService.getChapterPages(dto.getId());
+            chapter.setImages(pages);
+            chapter.setPages(pages.size());
+        } catch (Exception e) {
+            log.warn("Erro ao buscar páginas do capítulo {}: {}", dto.getId(), e.getMessage());
         }
         
         return saveChapter(chapter);
-    }
-    
-    /**
-     * Atualiza um capítulo existente
-     */
-    public Chapter updateChapter(Chapter chapter) {
-        log.info("Atualizando capítulo: {}", chapter.getId());
-        
-        if (!chapterRepository.existsById(chapter.getId())) {
-            throw new IllegalArgumentException("Capítulo não encontrado com ID: " + chapter.getId());
-        }
-        
-        return chapterRepository.save(chapter);
     }
     
     /**
@@ -85,7 +89,7 @@ public class ChapterService {
     }
     
     /**
-     * Busca capítulo por ID com imagens relacionadas
+     * Busca capítulo por ID com imagens
      */
     @Transactional(readOnly = true)
     public Optional<Chapter> findByIdWithImages(String id) {
@@ -93,7 +97,7 @@ public class ChapterService {
     }
     
     /**
-     * Busca capítulos por mangá (ordenados por número do capítulo)
+     * Busca capítulos por manga
      */
     @Transactional(readOnly = true)
     public List<Chapter> findByManga(Manga manga) {
@@ -101,7 +105,7 @@ public class ChapterService {
     }
     
     /**
-     * Busca capítulos por ID do mangá (ordenados por número do capítulo)
+     * Busca capítulos por ID do manga
      */
     @Transactional(readOnly = true)
     public List<Chapter> findByMangaId(String mangaId) {
@@ -109,19 +113,11 @@ public class ChapterService {
     }
     
     /**
-     * Busca capítulos por ID do mangá e idioma
+     * Busca capítulos por manga e idioma
      */
     @Transactional(readOnly = true)
     public List<Chapter> findByMangaIdAndLanguage(String mangaId, String language) {
         return chapterRepository.findByMangaIdAndLanguage(mangaId, language);
-    }
-    
-    /**
-     * Busca capítulo específico por mangá e número do capítulo
-     */
-    @Transactional(readOnly = true)
-    public Optional<Chapter> findByMangaIdAndChapterNumber(String mangaId, String chapterNumber) {
-        return chapterRepository.findByMangaIdAndChapterNumber(mangaId, chapterNumber);
     }
     
     /**
@@ -133,14 +129,6 @@ public class ChapterService {
     }
     
     /**
-     * Busca capítulos por status
-     */
-    @Transactional(readOnly = true)
-    public Page<Chapter> findByStatus(String status, Pageable pageable) {
-        return chapterRepository.findByStatus(status, pageable);
-    }
-    
-    /**
      * Busca capítulos mais recentes
      */
     @Transactional(readOnly = true)
@@ -149,19 +137,19 @@ public class ChapterService {
     }
     
     /**
+     * Conta capítulos por manga
+     */
+    @Transactional(readOnly = true)
+    public Long countByMangaId(String mangaId) {
+        return chapterRepository.countByMangaId(mangaId);
+    }
+    
+    /**
      * Lista todos os capítulos
      */
     @Transactional(readOnly = true)
     public Page<Chapter> findAll(Pageable pageable) {
         return chapterRepository.findAll(pageable);
-    }
-    
-    /**
-     * Conta o número de capítulos de um mangá
-     */
-    @Transactional(readOnly = true)
-    public Long countByMangaId(String mangaId) {
-        return chapterRepository.countByMangaId(mangaId);
     }
     
     /**
@@ -178,14 +166,6 @@ public class ChapterService {
     }
     
     /**
-     * Verifica se um capítulo existe por ID
-     */
-    @Transactional(readOnly = true)
-    public boolean existsById(String id) {
-        return chapterRepository.existsById(id);
-    }
-    
-    /**
      * Incrementa o número de views de um capítulo
      */
     public Chapter incrementViews(String id) {
@@ -193,26 +173,36 @@ public class ChapterService {
         if (chapterOpt.isPresent()) {
             Chapter chapter = chapterOpt.get();
             chapter.setViews(chapter.getViews() + 1);
-            return updateChapter(chapter);
+            return chapterRepository.save(chapter);
         }
         throw new IllegalArgumentException("Capítulo não encontrado com ID: " + id);
     }
     
     /**
-     * Adiciona imagens a um capítulo
+     * Busca e salva capítulos de um manga da API
      */
-    public Chapter addImagesToChapter(String chapterId, List<String> imageUrls) {
-        Optional<Chapter> chapterOpt = findById(chapterId);
-        if (chapterOpt.isPresent()) {
-            Chapter chapter = chapterOpt.get();
-            if (chapter.getImages() == null) {
-                chapter.setImages(imageUrls);
-            } else {
-                chapter.getImages().addAll(imageUrls);
-            }
-            chapter.setPages(chapter.getImages().size());
-            return updateChapter(chapter);
+    @Transactional
+    public List<Chapter> populateChaptersForManga(String mangaId) {
+        Optional<Manga> mangaOpt = mangaService.findById(mangaId);
+        if (mangaOpt.isEmpty()) {
+            throw new IllegalArgumentException("Manga não encontrado com ID: " + mangaId);
         }
-        throw new IllegalArgumentException("Capítulo não encontrado com ID: " + chapterId);
+        
+        Manga manga = mangaOpt.get();
+        List<ChapterDto> chaptersDto = apiService.getChaptersByMangaId(manga.getApiId(), 500, 0);
+        
+        log.info("Encontrados {} capítulos para o manga {}", chaptersDto.size(), manga.getTitle());
+        
+        return chaptersDto.stream()
+                .map(dto -> createChapter(dto, manga))
+                .toList();
+    }
+
+    /**
+     * Conta total de capítulos - OTIMIZADO para estatísticas
+     */
+    @Transactional(readOnly = true)
+    public long countAll() {
+        return chapterRepository.count();
     }
 } 

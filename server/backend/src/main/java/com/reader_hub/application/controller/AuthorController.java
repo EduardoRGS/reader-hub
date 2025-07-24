@@ -1,6 +1,7 @@
 package com.reader_hub.application.controller;
 
 import com.reader_hub.application.dto.AuthorDto;
+import com.reader_hub.application.dto.AuthorResponseDto;
 import com.reader_hub.application.dto.PaginatedDto;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Author;
@@ -24,25 +25,37 @@ public class AuthorController {
         this.apiService = apiService;
     }
 
-    @GetMapping("/{id}")
-    public Optional<AuthorDto> getAuthorById(@PathVariable String id) {
+    // Endpoints da API Externa (MangaDx)
+    @GetMapping("/external/{id}")
+    public Optional<AuthorDto> getExternalAuthorById(@PathVariable String id) {
         return apiService.getAuthorById(id);
     }
 
-    @GetMapping()
-    public PaginatedDto<AuthorDto> getAuthors(@RequestParam int limit, @RequestParam int offset) {
+    @GetMapping("/external")
+    public PaginatedDto<AuthorDto> getExternalAuthors(@RequestParam int limit, @RequestParam int offset) {
         return apiService.getAuthors(limit, offset);
     }
 
+    // Endpoints do Banco Local - retornando DTOs
     @GetMapping("/listAll")
-    public List<Author> getAllAuthors () {
-        return authorService.findAll();
+    public List<AuthorResponseDto> getAllAuthors() {
+        List<Author> authors = authorService.findAll();
+        return AuthorResponseDto.fromEntityList(authors);
+    }
+
+    @GetMapping("/local/{id}")
+    public ResponseEntity<AuthorResponseDto> getLocalAuthorById(@PathVariable String id) {
+        Optional<Author> author = authorService.findById(id);
+        if (author.isPresent()) {
+            return ResponseEntity.ok(AuthorResponseDto.fromEntity(author.get()));
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public ResponseEntity<Author> createAuthor(@RequestBody AuthorDto authorDto) {
-        var author = authorService.createAuthor(authorDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(author);
+    public ResponseEntity<AuthorResponseDto> createAuthor(@RequestBody AuthorDto authorDto) {
+        Author author = authorService.createAuthor(authorDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(AuthorResponseDto.fromEntity(author));
     }
 
     @Autowired
