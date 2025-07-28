@@ -185,12 +185,12 @@ public interface MangaRepository extends JpaRepository<Manga, String> {
     @Query(value = """
         SELECT * FROM (
             SELECT m.*,
-                   ROW_NUMBER() OVER (PARTITION BY m.year ORDER BY m.rating DESC, m.follows DESC) as rank
+                   ROW_NUMBER() OVER (PARTITION BY m.publication_year ORDER BY m.rating DESC, m.follows DESC) as rank
             FROM mangas m 
-            WHERE m.year BETWEEN :startYear AND :endYear
+            WHERE m.publication_year BETWEEN :startYear AND :endYear
         ) ranked 
         WHERE rank <= :topN
-        ORDER BY year DESC, rank ASC
+        ORDER BY publication_year DESC, rank ASC
         """, nativeQuery = true)
     List<Manga> findTopMangasByPeriod(
         @Param("startYear") String startYear,

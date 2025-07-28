@@ -17,7 +17,7 @@ import java.util.Map;
 @Table(name = "mangas", indexes = {
     @Index(name = "idx_manga_api_id", columnList = "apiId"),
     @Index(name = "idx_manga_status", columnList = "status"),
-    @Index(name = "idx_manga_year", columnList = "year"),
+    @Index(name = "idx_manga_year", columnList = "publication_year"),
     @Index(name = "idx_manga_rating", columnList = "rating"),
     @Index(name = "idx_manga_created_at", columnList = "created_at"),
     @Index(name = "idx_manga_title_gin", columnList = "title") // GIN index para JSONB
@@ -57,16 +57,16 @@ public class Manga {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
     
-    @Column(columnDefinition = "integer default 0")
+    @Column(columnDefinition = "integer")
     private Integer views;
     
-    @Column(columnDefinition = "integer default 0")
+    @Column(columnDefinition = "integer")
     private Integer follows;
     
-    @Column(columnDefinition = "decimal(3,2) default 0.0")
+    @Column(columnDefinition = "decimal(3,2)")
     private Double rating;
     
-    @Column(name = "rating_count", columnDefinition = "integer default 0")
+    @Column(name = "rating_count", columnDefinition = "integer")
     private Integer ratingCount;
     
     @ManyToOne(fetch = FetchType.LAZY)
