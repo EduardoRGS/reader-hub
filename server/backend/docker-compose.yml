@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # =====================================
+  # POSTGRESQL DATABASE
+  # =====================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: readerhub-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      # Usuário padrão postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      # Banco e usuário específico da aplicação
+      POSTGRES_DB: readerhub
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - readerhub-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d readerhub" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =====================================
+  # PGADMIN (INTERFACE WEB)
+  # =====================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: readerhub-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@readerhub.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./init-scripts/servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - readerhub-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # =====================================
+  # REDIS (CACHE) - OPCIONAL
+  # =====================================
+  redis:
+    image: redis:7-alpine
+    container_name: readerhub-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass redis123
+    volumes:
+      - redis_data:/data
+    networks:
+      - readerhub-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# =====================================
+# VOLUMES
+# =====================================
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# =====================================
+# NETWORKS
+# =====================================
+networks:
+  readerhub-network:
+    driver: bridge

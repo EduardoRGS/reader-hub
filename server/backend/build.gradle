@@ -33,11 +33,21 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
-	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	
+	// PostgreSQL para produção
 	runtimeOnly 'org.postgresql:postgresql'
+	
+	// H2 para desenvolvimento/testes
 	runtimeOnly 'com.h2database:h2'
+	
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+	
+	// Dev tools
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	
+	// Testes
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
