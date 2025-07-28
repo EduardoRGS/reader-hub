@@ -36,10 +36,36 @@ out/
 ### VS Code ###
 .vscode/
 
-### Database ###
+### Database Files ###
+# H2 Database
 data/
-*.db
 *.mv.db
 *.trace.db
-*.lock.db
-*.log.db
+
+# PostgreSQL local data (Docker volumes são externos)
+postgres_data/
+pgadmin_data/
+redis_data/
+
+### Logs ###
+logs/
+*.log
+
+### Environment & Secrets ###
+.env
+.env.local
+.env.production
+*.key
+*.pem
+
+### Backup Files ###
+backup.sql
+*.backup
+*.dump
+
+### Docker ###
+.docker/
+
+### OS Files ###
+.DS_Store
+Thumbs.db
