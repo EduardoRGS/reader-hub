@@ -70,6 +70,6 @@ public class MangaDto {
     public static class SimpleRelationship {
         private String id;
         private String type;
-        // Ignorar attributes complexas por enquanto
+        private Map<String, String> attributes;
     }
 } 

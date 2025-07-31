@@ -69,6 +69,9 @@ public class Manga {
     @Column(name = "rating_count", columnDefinition = "integer")
     private Integer ratingCount;
     
+    @Column(name = "cover_image", columnDefinition = "text")
+    private String coverImage;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", foreignKey = @ForeignKey(name = "fk_manga_author"))
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "mangas"})
