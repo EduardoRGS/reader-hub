@@ -3,6 +3,7 @@ package com.reader_hub.domain.service;
 import com.reader_hub.application.dto.AuthorDto;
 import com.reader_hub.application.dto.CreateMangaDto;
 import com.reader_hub.application.dto.MangaDto;
+import com.reader_hub.application.dto.MangaResponseDto;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Author;
 import com.reader_hub.domain.model.Manga;
@@ -97,10 +98,12 @@ public class MangaService {
         return mangaRepository.findByAuthor(author, pageable);
     }
 
+    /*
     @Transactional(readOnly = true)
     public Page<Manga> findByRatingGreaterThan(Double minRating, Pageable pageable) {
-        return mangaRepository.findByRatingGreaterThanEqual(minRating, pageable);
+        return mangaRepository.findByRatingGreaterThanEqual(minRating != null ? minRating : 0.0, pageable);
     }
+    */
 
     @Transactional(readOnly = true)
     public Page<Manga> findLatestMangas(Pageable pageable) {
@@ -194,7 +197,7 @@ public class MangaService {
     @Transactional(readOnly = true)
     public Page<Manga> findPopularMangasWithPreferredTitle(Integer minFollows, String preferredLanguage, Pageable pageable) {
         if (!isUsingPostgreSQL()) {
-            return mangaRepository.findByViewsGreaterThanEqual(minFollows, pageable);
+            return mangaRepository.findByViewsGreaterThanEqual(minFollows != null ? minFollows : 0, pageable);
         }
 
         return mangaRepository.findPopularMangasWithPreferredTitle(
@@ -210,23 +213,19 @@ public class MangaService {
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public Manga createManga(MangaDto mangaDto) {
-        // Verifica se já existe
-        if (mangaDto.getId() != null) {
-            Optional<Manga> existing = mangaRepository.findByApiId(mangaDto.getId());
-            if (existing.isPresent()) {
-                log.info("Manga já existe: {}", mangaDto.getId());
-                return existing.get();
-            }
+        // Verificar se já existe um manga com o mesmo apiId
+        if (mangaRepository.existsByApiId(mangaDto.getId())) {
+            throw new RuntimeException("Manga já existe com o apiId: " + mangaDto.getId());
         }
-
+        
         Manga manga = convertDtoToEntity(mangaDto);
         
-        // Busca e associa autor se necessário
-        if (mangaDto.getRelationships() != null && !mangaDto.getRelationships().isEmpty()) {
-            processAuthorRelationships(manga, mangaDto.getRelationships());
+        // Buscar e salvar a imagem da capa
+        if (manga.getApiId() != null) {
+            String coverImageUrl = apiService.getMangaCoverUrl(manga.getApiId());
+            manga.setCoverImage(coverImageUrl);
         }
-
-        log.info("Criando novo manga: {}", manga.getApiId());
+        
         return mangaRepository.save(manga);
     }
 
@@ -293,11 +292,6 @@ public class MangaService {
      */
     @Transactional(readOnly = true)
     public List<Manga> getTopMangasByPeriod(String startYear, String endYear, Integer topN) {
-        if (!isUsingPostgreSQL()) {
-            return mangaRepository.findByYear(startYear, Pageable.ofSize(topN != null ? topN : 10))
-                .getContent();
-        }
-
         return mangaRepository.findTopMangasByPeriod(startYear, endYear, topN != null ? topN : 10);
     }
 
@@ -331,6 +325,11 @@ public class MangaService {
         manga.setDescription(mangaDto.getAttributes() != null ? mangaDto.getAttributes().getDescription() : null);
         manga.setStatus(mangaDto.getAttributes() != null ? mangaDto.getAttributes().getStatus() : "unknown");
         manga.setYear(mangaDto.getAttributes() != null ? mangaDto.getAttributes().getYear() : null);
+        
+        // Processar relacionamentos de autor
+        if (mangaDto.getRelationships() != null && !mangaDto.getRelationships().isEmpty()) {
+            processAuthorRelationships(manga, mangaDto.getRelationships());
+        }
         
         return manga;
     }
