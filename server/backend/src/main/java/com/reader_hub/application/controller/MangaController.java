@@ -27,6 +27,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -243,6 +245,37 @@ public class MangaController {
         return ResponseEntity.ok(MangaResponseDto.fromEntity(manga));
     }
 
+    // ================== ENDPOINTS DE CAPAS ==================
+
+    @Operation(
+        summary = "Buscar capa do manga",
+        description = "Obtém a URL da capa de um manga específico da API MangaDX"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "URL da capa obtida com sucesso"),
+        @ApiResponse(responseCode = "404", description = "Capa não encontrada"),
+        @ApiResponse(responseCode = "400", description = "ID inválido")
+    })
+    @Tag(name = "🖼️ Capas")
+    @GetMapping("/external/{id}/cover")
+    public ResponseEntity<Map<String, String>> getMangaCover(
+            @Parameter(description = "ID único do manga na API MangaDX",
+                    example = "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0")
+            @PathVariable 
+            @NotBlank(message = "{manga.id.required}")
+            String id) {
+        
+        try {
+            String coverUrl = apiService.getMangaCoverUrl(id);
+            if (coverUrl != null) {
+                return ResponseEntity.ok(Map.of("coverUrl", coverUrl));
+            }
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     // ================== ENDPOINTS DE BUSCA E FILTROS ==================
 
     @Operation(
@@ -266,7 +299,6 @@ public class MangaController {
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{common.offset.positive}")
             Integer offset) {
-        
         Page<Manga> mangas = mangaService.findByStatus(status, PageRequest.of(offset / limit, limit));
         
         PaginatedResponseDto<MangaResponseDto> response = PaginatedResponseDto.fromPage(
@@ -297,7 +329,6 @@ public class MangaController {
             @RequestParam(defaultValue = "0") 
             @Min(value = 0, message = "{common.offset.positive}")
             Integer offset) {
-        
         Page<Manga> mangas = mangaService.findByYear(year, PageRequest.of(offset / limit, limit));
         
         PaginatedResponseDto<MangaResponseDto> response = PaginatedResponseDto.fromPage(
