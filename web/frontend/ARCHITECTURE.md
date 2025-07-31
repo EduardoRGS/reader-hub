@@ -15,11 +15,16 @@ src/
 │   ├── MangaCard.tsx      # Card de mangá (featured/popular)
 │   ├── CategoryCard.tsx   # Card de categoria
 │   ├── Footer.tsx         # Rodapé da aplicação
+│   ├── reader/            # Componentes do leitor de mangá
+│   ├── library/           # Componentes da biblioteca
 │   └── index.ts           # Barrel exports
-├── data/                  # Dados mockados
-│   └── mockData.ts        # Dados temporários para desenvolvimento
 ├── hooks/                 # Custom hooks
-│   └── useMangaData.ts    # Hook para gerenciar dados de manga
+│   ├── useMangaData.ts    # Hook para gerenciar dados de manga
+│   ├── useCategories.ts   # Hook para gerenciar categorias
+│   ├── useLibrary.ts      # Hook para gerenciar biblioteca
+│   └── useChapterReader.ts # Hook para gerenciar leitor de capítulos
+├── services/              # Serviços de API
+│   └── api.ts             # Configuração e funções da API
 ├── types/                 # Definições TypeScript
 │   └── manga.ts           # Interfaces e tipos relacionados a manga
 └── utils/                 # Utilitários (futuro)
@@ -31,10 +36,11 @@ src/
 - Cada componente tem responsabilidade única
 - Props tipadas com TypeScript
 - Reutilização através de variants (`MangaCard`)
+- Organização por domínio (reader/, library/)
 
 ### 2. **Separação de Responsabilidades**
 - **`/components`**: UI components puros
-- **`/data`**: Dados mockados (será API integration)
+- **`/services`**: Integração com APIs
 - **`/hooks`**: Lógica de estado personalizada
 - **`/types`**: Contratos e interfaces TypeScript
 
@@ -65,14 +71,16 @@ src/
 ## 🔮 Preparação para o Futuro
 
 ### API Integration
-- Hook `useMangaData` preparado para calls reais
+- Hooks preparados para calls reais
 - Loading states implementados
 - Estrutura de dados flexível
+- Tratamento de erros robusto
 
 ### Escalabilidade
 - Componentes atômicos e compostos
 - Sistema de tipos robusto
 - Padrões consistentes de código
+- Organização por domínio
 
 ### Performance
 - Next.js 15 com App Router
@@ -88,9 +96,8 @@ src/
 
 ## 📝 Próximos Passos
 
-1. **Integração com Backend**: Conectar com API Java Spring Boot
-2. **Autenticação**: Implementar sistema de login/registro
-3. **Páginas Internas**: Criar páginas de mangá, capítulos, perfil
-4. **Estado Global**: Implementar Context API ou Zustand
-5. **Testing**: Adicionar Jest + Testing Library
-6. **Performance**: Otimizações e analytics 
+1. **Autenticação**: Implementar sistema de login/registro
+2. **Páginas Internas**: Criar páginas de mangá, capítulos, perfil
+3. **Estado Global**: Implementar Context API ou Zustand
+4. **Testing**: Adicionar Jest + Testing Library
+5. **Performance**: Otimizações e analytics 
