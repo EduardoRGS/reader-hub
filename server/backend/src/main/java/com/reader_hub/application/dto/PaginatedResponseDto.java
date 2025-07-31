@@ -52,4 +52,20 @@ public class PaginatedResponseDto<T> {
         dto.setEmpty(page.isEmpty());
         return dto;
     }
+    
+    /**
+     * Cria um PaginatedResponseDto a partir de uma lista e informações de paginação
+     */
+    public static <T> PaginatedResponseDto<T> fromList(List<T> content, long totalElements, int number, int size) {
+        PaginatedResponseDto<T> dto = new PaginatedResponseDto<>();
+        dto.setContent(content);
+        dto.setTotalElements(totalElements);
+        dto.setTotalPages((int) Math.ceil((double) totalElements / size));
+        dto.setSize(size);
+        dto.setNumber(number);
+        dto.setFirst(number == 0);
+        dto.setLast(number >= (int) Math.ceil((double) totalElements / size) - 1);
+        dto.setEmpty(content.isEmpty());
+        return dto;
+    }
 } 
