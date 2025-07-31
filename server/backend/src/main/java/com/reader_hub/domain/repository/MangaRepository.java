@@ -26,6 +26,9 @@ public interface MangaRepository extends JpaRepository<Manga, String> {
     @Query("SELECT m FROM Manga m WHERE m.apiId = :apiId")
     Optional<Manga> findByApiId(@Param("apiId") String apiId);
     
+    @Query("SELECT COUNT(m) > 0 FROM Manga m WHERE m.apiId = :apiId")
+    boolean existsByApiId(@Param("apiId") String apiId);
+    
     @Query("SELECT m FROM Manga m WHERE m.author.id = :authorId")
     List<Manga> findByAuthorId(@Param("authorId") String authorId);
     
@@ -35,11 +38,11 @@ public interface MangaRepository extends JpaRepository<Manga, String> {
     @Query("SELECT m FROM Manga m LEFT JOIN FETCH m.author WHERE m.id = :id")
     Optional<Manga> findByIdWithAuthor(@Param("id") String id);
     
-    @Query("SELECT m FROM Manga m WHERE m.rating >= :minRating ORDER BY m.rating DESC")
-    Page<Manga> findByRatingGreaterThanEqual(@Param("minRating") Double minRating, Pageable pageable);
+    @Query("SELECT m FROM Manga m WHERE m.rating >= ?1 ORDER BY m.rating DESC")
+    Page<Manga> findByRatingGreaterThanEqual(Double minRating, Pageable pageable);
     
-    @Query("SELECT m FROM Manga m WHERE m.views >= :minViews ORDER BY m.views DESC")
-    Page<Manga> findByViewsGreaterThanEqual(@Param("minViews") Integer minViews, Pageable pageable);
+    @Query("SELECT m FROM Manga m WHERE m.views >= ?1 ORDER BY m.views DESC")
+    Page<Manga> findByViewsGreaterThanEqual(Integer minViews, Pageable pageable);
     
     @Query("SELECT m FROM Manga m ORDER BY m.createdAt DESC")
     Page<Manga> findLatestMangas(Pageable pageable);
