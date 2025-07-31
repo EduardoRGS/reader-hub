@@ -87,6 +87,9 @@ public class MangaResponseDto {
     @Schema(description = "Número total de capítulos disponíveis", example = "179")
     private Integer totalChapters;
     
+    @Schema(description = "URL da imagem da capa do manga", example = "https://api.mangadex.org/covers/123e4567-e89b-12d3-a456-426614174000/image.jpg")
+    private String coverImage;
+    
     public static MangaResponseDto fromEntity(Manga manga) {
         if (manga == null) {
             return null;
@@ -105,6 +108,7 @@ public class MangaResponseDto {
         dto.setFollows(manga.getFollows());
         dto.setRating(manga.getRating());
         dto.setRatingCount(manga.getRatingCount());
+        dto.setCoverImage(manga.getCoverImage());
         
         // Converter autor de forma segura
         if (manga.getAuthor() != null) {

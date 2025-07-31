@@ -254,4 +254,41 @@ public class ApiServiceImpl implements ApiService {
         }
         return new PaginatedDto<>(List.of(), 0, offset != null ? offset : 0, limit != null ? limit : 20);
     }
+
+    /**
+     * Busca a URL da capa de um manga
+     */
+    @Override
+    public String getMangaCoverUrl(String mangaId) {
+        var url = UriComponentsBuilder.fromUriString(apiUrl + "/manga/" + mangaId)
+                .queryParam("includes[]", "cover_art")
+                .build().toUriString();
+        
+        try {
+            var response = restTemplate.exchange(url, GET, null,
+                    new ParameterizedTypeReference<ApiSingleResponse<MangaDto>>() {});
+            
+            if (response.getBody() != null && 
+                response.getBody().getData() != null) {
+                
+                MangaDto manga = response.getBody().getData();
+                if (manga.getRelationships() != null) {
+                    // Procurar por relacionamento do tipo cover_art
+                    for (MangaDto.SimpleRelationship relationship : manga.getRelationships()) {
+                        if ("cover_art".equals(relationship.getType()) && relationship.getAttributes() != null) {
+                            String fileName = relationship.getAttributes().get("fileName");
+                            if (fileName != null) {
+                                // URL correta da imagem da capa
+                                return "https://uploads.mangadex.org/covers/" + mangaId + "/" + fileName;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erro ao buscar capa do manga: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
 } 

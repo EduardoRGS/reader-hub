@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/populate")
@@ -303,6 +304,18 @@ public class PopulationController {
             log.error("Erro durante população completa", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(
                 "Erro durante população completa: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/update-cover-images")
+    public ResponseEntity<String> updateCoverImages() {
+        try {
+            dataPopulationService.updateCoverImages();
+            return ResponseEntity.ok("Imagens das capas atualizadas com sucesso!");
+        } catch (Exception e) {
+            log.error("Erro ao atualizar imagens das capas: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao atualizar imagens das capas: " + e.getMessage());
         }
     }
 

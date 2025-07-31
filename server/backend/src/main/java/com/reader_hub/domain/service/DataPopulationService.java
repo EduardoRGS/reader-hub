@@ -198,4 +198,33 @@ public class DataPopulationService {
         
         return new PopulationCompleteResult(mangaResult, totalChaptersSaved, includeChapters);
     }
+
+    /**
+     * Atualiza as imagens das capas dos mangas existentes
+     */
+    @Transactional
+    public void updateCoverImages() {
+        log.info("Iniciando atualização das imagens das capas...");
+        
+        List<Manga> mangas = mangaService.findAll(org.springframework.data.domain.Pageable.unpaged()).getContent();
+        int updatedCount = 0;
+        
+        for (Manga manga : mangas) {
+            try {
+                if (manga.getApiId() != null) {
+                    String coverImageUrl = apiService.getMangaCoverUrl(manga.getApiId());
+                    if (coverImageUrl != null) {
+                        manga.setCoverImage(coverImageUrl);
+                        mangaService.save(manga);
+                        updatedCount++;
+                        log.info("Imagem da capa atualizada para manga: {}", manga.getApiId());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Erro ao atualizar imagem da capa para manga {}: {}", manga.getApiId(), e.getMessage());
+            }
+        }
+        
+        log.info("Atualização concluída. {} mangas atualizados.", updatedCount);
+    }
 } 
