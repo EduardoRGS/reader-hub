@@ -1,57 +1,100 @@
+'use client';
+
 import { Header, HeroSection, MangaCard, CategoryCard, Footer } from '@/components';
-import { featuredManga, popularManga, categories } from '@/data/mockData';
+import { useMangaData } from '@/hooks/useMangaData';
+import { useCategories } from '@/hooks/useCategories';
 
 export default function Home() {
+  const { featuredManga, popularManga, loading: mangaLoading, error: mangaError, retry: retryManga, retryCount } = useMangaData();
+  const { categories, loading: categoriesLoading, error: categoriesError, retry: retryCategories } = useCategories();
+
+  const loading = mangaLoading || categoriesLoading;
+  const error = mangaError || categoriesError;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">
+              {retryCount > 0 ? `Tentativa ${retryCount} de 3...` : 'Carregando...'}
+            </p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-md mx-auto px-4">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Erro ao carregar
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              {error}
+            </p>
+            <div className="space-x-4">
+              <button
+                onClick={retryManga}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              >
+                Tentar novamente
+              </button>
+              {categoriesError && (
+                <button
+                  onClick={retryCategories}
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Recarregar categorias
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
       <HeroSection />
-
-      {/* Featured Manga Section */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-3xl font-bold text-foreground">Mangás em Destaque</h3>
-            <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">Ver todos →</a>
-          </div>
-          
+      
+      {/* Seção de Mangás em Destaque */}
+      <section className="py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+            Mangás em Destaque
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredManga.map((manga) => (
-              <MangaCard key={manga.id} manga={manga} variant="featured" />
+            {featuredManga.map((manga, index) => (
+              <MangaCard 
+                key={manga.id} 
+                manga={manga} 
+                variant="featured" 
+                index={index} 
+              />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Popular Manga Section */}
-      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-900/50">
-        <div className="container mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-3xl font-bold text-foreground">Populares da Semana</h3>
-            <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">Ver ranking completo →</a>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {popularManga.map((manga, index) => (
-              <MangaCard key={manga.id} manga={manga} variant="popular" index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Categories Section */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-foreground mb-4">Explore por Categoria</h3>
-            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Encontre exatamente o tipo de história que você está procurando. 
-              Temos mangás para todos os gostos e idades.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Seção de Categorias */}
+      <section className="py-12 px-4 bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+            Categorias
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {categories.map((category) => (
               <CategoryCard key={category.name} category={category} />
             ))}
@@ -59,26 +102,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold mb-2">15,000+</div>
-              <div className="text-white/80">Mangás Disponíveis</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">500K+</div>
-              <div className="text-white/80">Leitores Ativos</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">2M+</div>
-              <div className="text-white/80">Capítulos Lidos</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">99.9%</div>
-              <div className="text-white/80">Uptime</div>
-            </div>
+      {/* Seção de Mangás Populares */}
+      <section className="py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+            Mangás Populares
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {popularManga.map((manga, index) => (
+              <MangaCard 
+                key={manga.id} 
+                manga={manga} 
+                variant="popular" 
+                index={index} 
+              />
+            ))}
           </div>
         </div>
       </section>

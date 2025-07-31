@@ -1,57 +1,94 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { MangaCardProps } from '@/types/manga';
 
-export default function MangaCard({ manga, variant = 'featured', index }: MangaCardProps) {
-  if (variant === 'popular') {
-    return (
-      <div className="group cursor-pointer">
-        <div className="relative overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 aspect-[3/4] mb-3">
-          <div className="w-full h-full bg-gradient-to-br from-green-500/20 to-blue-500/20 flex items-center justify-center">
-            <span className="text-gray-500 text-xs text-center px-2">Capa do Mangá</span>
-          </div>
-          {typeof index === 'number' && (
-            <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-              #{index + 1}
-            </div>
-          )}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-        </div>
-        <h4 className="font-medium text-sm text-foreground mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
-          {manga.title}
-        </h4>
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>{manga.chapter}</span>
-          <span>⭐ {manga.rating}</span>
-        </div>
-      </div>
-    );
-  }
+export default function MangaCard({ manga, variant = 'featured' }: MangaCardProps) {
+  const router = useRouter();
+  const title = manga.title?.['pt-br'] || manga.title?.['en'] || 'Título não disponível';
+  
+  const chapterInfo = manga.totalChapters 
+    ? `Capítulo ${manga.totalChapters}` 
+    : manga.chapter || 'Capítulos não disponíveis';
+  
+  // Formatar rating
+  const rating = manga.rating ? manga.rating.toFixed(1) : 'N/A';
+  
+  // Status em português
+  const statusMap = {
+    'ongoing': 'Em andamento',
+    'completed': 'Concluído',
+    'hiatus': 'Em pausa',
+    'cancelled': 'Cancelado'
+  };
+  const status = statusMap[manga.status] || manga.status;
+  const imageUrl = manga.coverImage;
+
+  const handleClick = () => {
+    router.push(`/manga/${manga.id}`);
+  };
 
   return (
-    <div className="group cursor-pointer">
-      <div className="relative overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 aspect-[3/4] mb-4">
-        <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
-          <span className="text-gray-500 text-sm">Capa do Mangá</span>
+    <div 
+      className={`group relative overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer ${
+        variant === 'featured' ? 'h-80' : 'h-64'
+      }`}
+      onClick={handleClick}
+    >
+      {/* Imagem de fundo */}
+      <div className="absolute inset-0">
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/placeholder-manga.jpg';
+          }}
+        />
+        {/* Overlay gradiente */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      </div>
+
+      {/* Conteúdo */}
+      <div className="relative z-10 flex flex-col justify-end h-full p-4">
+        {/* Badge de status */}
+        <div className="absolute top-3 right-3">
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+            manga.status === 'completed' ? 'bg-green-500 text-white' :
+            manga.status === 'ongoing' ? 'bg-blue-500 text-white' :
+            manga.status === 'hiatus' ? 'bg-yellow-500 text-black' :
+            'bg-red-500 text-white'
+          }`}>
+            {status}
+          </span>
         </div>
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-        <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-medium">
-          ⭐ {manga.rating}
-        </div>
-        <div className="absolute bottom-3 left-3 right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-          <p className="text-xs text-gray-600 dark:text-gray-300">{manga.chapter}</p>
+
+        {/* Informações do manga */}
+        <div>
+          <h3 className="text-lg font-bold text-white mb-1 line-clamp-2">
+            {title}
+          </h3>
+          
+          <div className="flex items-center justify-between text-sm text-gray-200">
+            <span>{chapterInfo}</span>
+            <div className="flex items-center space-x-1">
+              <span className="text-yellow-400">★</span>
+              <span>{rating}</span>
+            </div>
+          </div>
+
+          {/* Informações adicionais para featured */}
+          {variant === 'featured' && (
+            <div className="mt-2 text-xs text-gray-300">
+              <p>Ano: {manga.year || 'N/A'}</p>
+              {manga.author && (
+                <p>Autor: {manga.author.name}</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
-      <h4 className="font-semibold text-foreground mb-1 group-hover:text-blue-600 transition-colors">
-        {manga.title}
-      </h4>
-      {manga.genres && (
-        <div className="flex flex-wrap gap-1">
-          {manga.genres.slice(0, 2).map((genre) => (
-            <span key={genre} className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">
-              {genre}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 } 
