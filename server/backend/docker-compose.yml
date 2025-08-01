@@ -12,10 +12,10 @@ services:
       - "5432:5432"
     environment:
       # Usuário padrão postgres
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       # Banco e usuário específico da aplicação
-      POSTGRES_DB: ${DB_NAME:-readerhub}
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
