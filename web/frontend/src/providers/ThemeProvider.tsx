@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useReaderStore } from '@/store/readerStore';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
@@ -26,40 +26,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
 
     const root = document.documentElement;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const isDark = themeMode === 'dark';
 
-    const updateTheme = () => {
-      let isDark = false;
+    setResolvedTheme(isDark ? 'dark' : 'light');
 
-      if (themeMode === 'dark') {
-        isDark = true;
-      } else if (themeMode === 'system') {
-        isDark = mediaQuery.matches;
-      }
-
-      setResolvedTheme(isDark ? 'dark' : 'light');
-
-      if (isDark) {
-        root.classList.add('dark');
-        root.style.setProperty('--background', '#0a0a0a');
-        root.style.setProperty('--foreground', '#ededed');
-      } else {
-        root.classList.remove('dark');
-        root.style.setProperty('--background', '#ffffff');
-        root.style.setProperty('--foreground', '#171717');
-      }
-    };
-
-    updateTheme();
-
-    const handleMediaChange = () => {
-      if (themeMode === 'system') {
-        updateTheme();
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleMediaChange);
-    return () => mediaQuery.removeEventListener('change', handleMediaChange);
+    if (isDark) {
+      root.classList.add('dark');
+      root.style.setProperty('--background', '#0a0a0a');
+      root.style.setProperty('--foreground', '#ededed');
+    } else {
+      root.classList.remove('dark');
+      root.style.setProperty('--background', '#ffffff');
+      root.style.setProperty('--foreground', '#171717');
+    }
   }, [themeMode, mounted]);
 
   if (!mounted) {

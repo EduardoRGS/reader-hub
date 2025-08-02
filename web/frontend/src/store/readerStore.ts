@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 type ReadingMode = 'default' | 'webtoon';
-type ThemeMode = 'light' | 'dark' | 'system';
+type ThemeMode = 'light' | 'dark';
 
 interface ReadingProgress {
   mangaId: string;
@@ -40,9 +40,16 @@ interface ReaderState {
   setIsHydrated: (hydrated: boolean) => void;
 }
 
+const getSystemTheme = (): ThemeMode => {
+  if (typeof window !== 'undefined') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'light';
+};
+
 const initialState: Omit<ReaderState, 'setReadingMode' | 'setThemeMode' | 'setAutoAdvance' | 'setAutoNextChapter' | 'setShowPageNumbers' | 'setShowPageNumber' | 'addToHistory' | 'updateReadingProgress' | 'getLastReadChapter' | 'clearReadingHistory' | 'setIsHydrated'> = {
   readingMode: 'default',
-  themeMode: 'system',
+  themeMode: getSystemTheme(),
   autoAdvance: false,
   autoNextChapter: false,
   showPageNumbers: true,

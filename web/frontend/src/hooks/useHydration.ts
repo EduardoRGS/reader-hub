@@ -24,7 +24,7 @@ export function useReaderStoreHydrated() {
     return {
       ...store,
       readingMode: 'default' as const,
-      themeMode: 'system' as const,
+      themeMode: 'light' as const,
       autoNextChapter: true,
       showPageNumber: true,
       readingHistory: [],

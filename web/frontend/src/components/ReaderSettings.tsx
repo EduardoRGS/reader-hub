@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useReaderStoreHydrated } from '@/hooks/useHydration';
-import { useTheme } from '@/providers/ThemeProvider';
 
 interface ReaderSettingsProps {
   isOpen: boolean;
@@ -19,8 +18,6 @@ export function ReaderSettings({ isOpen, onClose }: ReaderSettingsProps) {
     setShowPageNumber,
     clearReadingHistory
   } = useReaderStoreHydrated();
-
-  const { theme, setTheme } = useTheme();
 
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [showSavedMessage, setShowSavedMessage] = useState(false);
@@ -105,30 +102,7 @@ export function ReaderSettings({ isOpen, onClose }: ReaderSettingsProps) {
             </div>
           </div>
 
-          {/* Tema */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tema</label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => handleSettingChange(() => setTheme('light'))}
-                className={`py-2 px-4 rounded-md transition-colors ${theme === 'light' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
-              >
-                Claro
-              </button>
-              <button
-                onClick={() => handleSettingChange(() => setTheme('dark'))}
-                className={`py-2 px-4 rounded-md transition-colors ${theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
-              >
-                Escuro
-              </button>
-              <button
-                onClick={() => handleSettingChange(() => setTheme('system'))}
-                className={`py-2 px-4 rounded-md transition-colors ${theme === 'system' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
-              >
-                Sistema
-              </button>
-            </div>
-          </div>
+
 
           {/* Opções */}
           <div>
