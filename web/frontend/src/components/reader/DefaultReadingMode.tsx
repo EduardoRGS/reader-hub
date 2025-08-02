@@ -7,6 +7,7 @@ interface DefaultReadingModeProps {
   currentPage: number;
   totalPages: number;
   imageLoading: { [key: number]: boolean };
+  showPageNumber?: boolean;
   onGoToPreviousPage: () => void;
   onGoToNextPage: () => void;
   onImageLoad: (index: number) => void;
@@ -18,6 +19,7 @@ export default function DefaultReadingMode({
   currentPage,
   totalPages,
   imageLoading,
+  showPageNumber = true,
   onGoToPreviousPage,
   onGoToNextPage,
   onImageLoad,
@@ -35,9 +37,11 @@ export default function DefaultReadingMode({
         </button>
         
         <div className="text-center">
-          <span className="text-lg font-semibold text-gray-900 dark:text-white">
-            Página {currentPage} de {totalPages}
-          </span>
+          {showPageNumber && (
+            <span className="text-lg font-semibold text-gray-900 dark:text-white">
+              Página {currentPage} de {totalPages}
+            </span>
+          )}
           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Use as setas ← → para navegar entre páginas
           </div>
@@ -97,4 +101,4 @@ export default function DefaultReadingMode({
       </div>
     </div>
   );
-} 
+}

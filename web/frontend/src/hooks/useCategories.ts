@@ -1,38 +1,12 @@
-import { useState, useEffect } from 'react';
-import { mangaService, Category } from '@/services/api';
+import { useCategories as useCategoriesQuery } from './queries';
 
 export const useCategories = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const categoriesData = await mangaService.getCategories();
-      setCategories(categoriesData);
-    } catch (err) {
-      console.error('Erro ao buscar categorias:', err);
-      setError('Erro ao carregar categorias');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const retry = () => {
-    fetchCategories();
-  };
+  const { data: categories = [], isLoading: loading, error, refetch: retry } = useCategoriesQuery();
 
   return {
     categories,
     loading,
-    error,
+    error: error instanceof Error ? error.message : null,
     retry
   };
 }; 

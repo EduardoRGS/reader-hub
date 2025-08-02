@@ -2,14 +2,15 @@
 
 import { Chapter } from '@/types/manga';
 import DefaultReadingMode from './DefaultReadingMode';
-import ListReadingMode from './ListReadingMode';
+import WebtoonReadingMode from './WebtoonReadingMode';
 
 interface ChapterContentProps {
   chapter: Chapter;
-  readingMode: 'default' | 'list';
+  readingMode: 'default' | 'webtoon';
   currentPage: number;
   totalPages: number;
   imageLoading: { [key: number]: boolean };
+  showPageNumber?: boolean;
   onGoToPreviousPage: () => void;
   onGoToNextPage: () => void;
   onImageLoad: (index: number) => void;
@@ -22,6 +23,7 @@ export default function ChapterContent({
   currentPage,
   totalPages,
   imageLoading,
+  showPageNumber = true,
   onGoToPreviousPage,
   onGoToNextPage,
   onImageLoad,
@@ -40,13 +42,15 @@ export default function ChapterContent({
             onGoToNextPage={onGoToNextPage}
             onImageLoad={onImageLoad}
             onImageError={onImageError}
+            showPageNumber={showPageNumber}
           />
         ) : (
-          <ListReadingMode
+          <WebtoonReadingMode
             chapter={chapter}
             imageLoading={imageLoading}
             onImageLoad={onImageLoad}
             onImageError={onImageError}
+            showPageNumber={showPageNumber}
           />
         )
       ) : chapter.pages && chapter.pages > 0 ? (
@@ -89,4 +93,4 @@ export default function ChapterContent({
       )}
     </div>
   );
-} 
+}

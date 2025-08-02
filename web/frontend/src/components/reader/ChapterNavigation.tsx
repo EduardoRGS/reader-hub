@@ -8,13 +8,13 @@ interface ChapterNavigationProps {
   chapters: Chapter[];
   currentPage: number;
   totalPages: number;
-  readingMode: 'default' | 'list';
+  readingMode: 'default' | 'webtoon';
   showChapterSelector: boolean;
   onGoToMangaPage: () => void;
   onGoToPreviousChapter: () => void;
   onGoToNextChapter: () => void;
   onGoToChapter: (chapterId: string) => void;
-  onSetReadingMode: (mode: 'default' | 'list') => void;
+  onSetReadingMode: (mode: 'default' | 'webtoon') => void;
   onSetShowChapterSelector: (show: boolean) => void;
 }
 
@@ -106,14 +106,14 @@ export default function ChapterNavigation({
                 📄 Página
               </button>
               <button
-                onClick={() => onSetReadingMode('list')}
+                onClick={() => onSetReadingMode('webtoon')}
                 className={`px-2 py-1 text-xs rounded transition-colors ${
-                  readingMode === 'list'
+                  readingMode === 'webtoon'
                     ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                📋 Lista
+                🔄 Webtoon
               </button>
             </div>
 
@@ -126,8 +126,8 @@ export default function ChapterNavigation({
             </button>
             <span className="text-sm text-gray-500 dark:text-gray-400">
               Página {currentPage} de {totalPages}
-              {readingMode === 'list' && (
-                <span className="ml-2 text-blue-600 dark:text-blue-400">📋 Lista</span>
+              {readingMode === 'webtoon' && (
+                <span className="ml-2 text-blue-600 dark:text-blue-400">🔄 Webtoon</span>
               )}
             </span>
             <button
@@ -142,4 +142,4 @@ export default function ChapterNavigation({
       </div>
     </div>
   );
-} 
+}

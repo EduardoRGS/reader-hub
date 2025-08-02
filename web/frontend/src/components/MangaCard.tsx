@@ -2,9 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { MangaCardProps } from '@/types/manga';
+import { usePrefetch } from '@/hooks/usePrefetch';
 
 export default function MangaCard({ manga, variant = 'featured' }: MangaCardProps) {
   const router = useRouter();
+  const { prefetchManga } = usePrefetch();
+  
+  // Função para iniciar o prefetch quando o usuário passa o mouse sobre o card
+  const handleMouseEnter = () => {
+    prefetchManga(manga.id);
+  };
   const title = manga.title?.['pt-br'] || manga.title?.['en'] || 'Título não disponível';
   
   const chapterInfo = manga.totalChapters 
@@ -34,6 +41,7 @@ export default function MangaCard({ manga, variant = 'featured' }: MangaCardProp
         variant === 'featured' ? 'h-80' : 'h-64'
       }`}
       onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
     >
       {/* Imagem de fundo */}
       <div className="absolute inset-0">
@@ -91,4 +99,4 @@ export default function MangaCard({ manga, variant = 'featured' }: MangaCardProp
       </div>
     </div>
   );
-} 
+}

@@ -13,7 +13,7 @@ export default function LibraryPage() {
     searchTerm,
     statusFilter,
     filteredMangas,
-    fetchMangas,
+    refetch,
     handleSearch,
     goToPage,
     getStats,
@@ -52,7 +52,7 @@ export default function LibraryPage() {
               {error}
             </p>
             <button
-              onClick={fetchMangas}
+              onClick={() => refetch()}
               className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
               Tentar novamente
@@ -141,4 +141,4 @@ export default function LibraryPage() {
       <Footer />
     </div>
   );
-} 
+}
