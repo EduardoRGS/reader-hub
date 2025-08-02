@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { Manga, PaginatedResponse, Chapter } from '@/types/manga';
+import { Manga, Chapter, PaginatedResponse } from '@/types/manga';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -65,7 +65,7 @@ export const mangaService = {
       const response = await api.get(`/api/manga?limit=${limit}&offset=${offset}`);
       return response.data;
     } catch (error) {
-      return handleApiError(error);
+        return handleApiError(error);
     }
   },
 
@@ -114,7 +114,7 @@ export const mangaService = {
     try {
       const response = await api.get('/api/manga/categories');
       return response.data || [];
-    } catch (error) {
+    } catch {
       // Se não houver endpoint de categorias, retornar categorias padrão
       return [
         { name: "Ação", count: 0, color: "from-red-500 to-orange-500" },
