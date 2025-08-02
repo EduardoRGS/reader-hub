@@ -2,7 +2,18 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { Search, User, Menu, BookOpen, Heart, TrendingUp, Grid3X3 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -33,27 +44,40 @@ export default function Header() {
         </Link>
         
         {/* Menu Desktop */}
-        <div className="hidden md:flex items-center space-x-8">
-          <Link href="/" className="text-foreground hover:text-blue-600 transition-colors">Início</Link>
-          <Link href="/library" className="text-foreground hover:text-blue-600 transition-colors">Biblioteca</Link>
-          <Link href="/popular" className="text-foreground hover:text-blue-600 transition-colors">Populares</Link>
-          <Link href="/categories" className="text-foreground hover:text-blue-600 transition-colors">Categorias</Link>
-          <Link href="/favorites" className="text-foreground hover:text-blue-600 transition-colors">Favoritos</Link>
+        <div className="hidden md:flex items-center space-x-6">
+          <Link href="/" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
+            <BookOpen className="w-4 h-4" />
+            <span>Início</span>
+          </Link>
+          <Link href="/library" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
+            <Grid3X3 className="w-4 h-4" />
+            <span>Biblioteca</span>
+          </Link>
+          <Link href="/popular" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
+            <TrendingUp className="w-4 h-4" />
+            <span>Populares</span>
+          </Link>
+          <Link href="/favorites" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
+            <Heart className="w-4 h-4" />
+            <span>Favoritos</span>
+          </Link>
         </div>
 
         <div className="flex items-center space-x-4">
           {/* Barra de pesquisa - Desktop */}
           <div className="hidden sm:block relative">
-            <input
+            <Input
               type="text"
               placeholder="Buscar mangás..."
-              className="w-64 px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-64 pl-4 pr-10"
             />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+            >
+              <Search className="w-4 h-4" />
+            </Button>
           </div>
           
           {/* Seletor de tema */}
@@ -61,22 +85,48 @@ export default function Header() {
             <ThemeToggle />
           </div>
           
-          {/* Botão de perfil */}
-          <button className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </button>
+          {/* Menu do usuário */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="relative h-8 w-8 rounded-full">
+                <User className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">Usuário</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    usuario@example.com
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                Configurações
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                Histórico de leitura
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Botão do menu mobile */}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="md:hidden h-8 w-8 p-0"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+            <Menu className="w-5 h-5" />
+          </Button>
         </div>
       </nav>
 
@@ -86,16 +136,18 @@ export default function Header() {
           <div className="px-4 py-4 space-y-4">
             {/* Barra de pesquisa - Mobile */}
             <div className="relative">
-              <input
+              <Input
                 type="text"
                 placeholder="Buscar mangás..."
-                className="w-full px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-4 pr-10"
               />
-              <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
             </div>
             
             {/* Seletor de tema - Mobile */}
@@ -107,38 +159,35 @@ export default function Header() {
             <div className="space-y-2">
               <Link 
                 href="/" 
-                className="block px-4 py-2 text-foreground hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="flex items-center space-x-3 px-4 py-3 text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Início
+                <BookOpen className="w-5 h-5" />
+                <span>Início</span>
               </Link>
               <Link 
                 href="/library" 
-                className="block px-4 py-2 text-foreground hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="flex items-center space-x-3 px-4 py-3 text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Biblioteca
+                <Grid3X3 className="w-5 h-5" />
+                <span>Biblioteca</span>
               </Link>
               <Link 
                 href="/popular" 
-                className="block px-4 py-2 text-foreground hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="flex items-center space-x-3 px-4 py-3 text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Populares
-              </Link>
-              <Link 
-                href="/categories" 
-                className="block px-4 py-2 text-foreground hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Categorias
+                <TrendingUp className="w-5 h-5" />
+                <span>Populares</span>
               </Link>
               <Link 
                 href="/favorites" 
-                className="block px-4 py-2 text-foreground hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="flex items-center space-x-3 px-4 py-3 text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Favoritos
+                <Heart className="w-5 h-5" />
+                <span>Favoritos</span>
               </Link>
             </div>
           </div>

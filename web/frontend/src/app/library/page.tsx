@@ -3,6 +3,9 @@
 import { Header, Footer, MangaCard } from '@/components';
 import { LibraryStats, LibraryFilters, Pagination } from '@/components/library';
 import { useLibrary } from '@/hooks/useLibrary';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
 
 export default function LibraryPage() {
   const {
@@ -28,10 +31,17 @@ export default function LibraryPage() {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Carregando biblioteca...</p>
-          </div>
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="p-8 text-center">
+              <div className="flex items-center justify-center mb-4">
+                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Carregando biblioteca</h3>
+              <p className="text-muted-foreground">
+                Aguarde enquanto carregamos os mangás...
+              </p>
+            </CardContent>
+          </Card>
         </div>
         <Footer />
       </div>
@@ -43,21 +53,23 @@ export default function LibraryPage() {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center max-w-md mx-auto px-4">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Erro ao carregar biblioteca
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {error}
-            </p>
-            <button
-              onClick={() => refetch()}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-            >
-              Tentar novamente
-            </button>
-          </div>
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="p-8 text-center">
+              <div className="flex items-center justify-center mb-4">
+                <AlertTriangle className="h-12 w-12 text-destructive" />
+              </div>
+              <CardTitle className="text-xl mb-2">
+                Erro ao carregar biblioteca
+              </CardTitle>
+              <p className="text-muted-foreground mb-6">
+                {error}
+              </p>
+              <Button onClick={() => refetch()} className="w-full">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Tentar novamente
+              </Button>
+            </CardContent>
+          </Card>
         </div>
         <Footer />
       </div>
@@ -80,28 +92,38 @@ export default function LibraryPage() {
 
       {/* Filtros e Busca */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-          <LibraryFilters
-            searchTerm={searchTerm}
-            statusFilter={statusFilter}
-            onSearchChange={setSearchTerm}
-            onStatusChange={setStatusFilter}
-            onSearchSubmit={handleSearch}
-          />
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Filtros e Estatísticas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <LibraryFilters
+              searchTerm={searchTerm}
+              statusFilter={statusFilter}
+              onSearchChange={setSearchTerm}
+              onStatusChange={setStatusFilter}
+              onSearchSubmit={handleSearch}
+            />
 
-          {/* Estatísticas */}
-          <div className="mt-6">
+            {/* Estatísticas */}
             <LibraryStats stats={stats} />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Grid de Mangás */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              <p className="text-gray-600 dark:text-gray-300">Carregando...</p>
-            </div>
+            <Card className="w-full max-w-sm mx-4">
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+                </div>
+                <p className="text-muted-foreground">Carregando...</p>
+              </CardContent>
+            </Card>
           </div>
         ) : filteredMangas.length > 0 ? (
           <>
@@ -123,17 +145,23 @@ export default function LibraryPage() {
             />
           </>
         ) : (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📚</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Nenhum mangá encontrado
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300">
-              {searchTerm 
-                ? `Nenhum mangá encontrado para "${searchTerm}"`
-                : 'Não há mangás disponíveis no momento.'
-              }
-            </p>
+          <div className="flex items-center justify-center py-12">
+            <Card className="w-full max-w-md mx-4">
+              <CardContent className="p-8 text-center">
+                <div className="flex items-center justify-center mb-4">
+                  <BookOpen className="h-16 w-16 text-muted-foreground" />
+                </div>
+                <CardTitle className="text-xl mb-2">
+                  Nenhum mangá encontrado
+                </CardTitle>
+                <p className="text-muted-foreground">
+                  {searchTerm 
+                    ? `Nenhum mangá encontrado para "${searchTerm}"`
+                    : 'Não há mangás disponíveis no momento.'
+                  }
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
