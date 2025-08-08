@@ -10,6 +10,9 @@ import com.reader_hub.domain.model.Manga;
 import com.reader_hub.domain.repository.MangaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -44,21 +47,35 @@ public class MangaService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "mangas", key = "#id")
     public Optional<Manga> findById(String id) {
+        log.debug("Buscando manga por ID: {}", id);
         return mangaRepository.findById(id);
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "mangas", key = "'with-author-' + #id")
     public Optional<Manga> findByIdWithAuthor(String id) {
+        log.debug("Buscando manga com autor por ID: {}", id);
         return mangaRepository.findByIdWithAuthor(id);
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "mangas", key = "'with-chapters-' + #id")
     public Optional<Manga> findByIdWithChapters(String id) {
+        log.debug("Buscando manga com capítulos por ID: {}", id);
         return mangaRepository.findByIdWithChapters(id);
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "mangas", key = "#manga.id"),
+        @CacheEvict(value = "mangas", key = "'with-author-' + #manga.id"),
+        @CacheEvict(value = "mangas", key = "'with-chapters-' + #manga.id"),
+        @CacheEvict(value = "manga-lists", allEntries = true),
+        @CacheEvict(value = "statistics", allEntries = true)
+    })
     public Manga save(Manga manga) {
+        log.debug("Salvando manga: {}", manga.getId());
         return mangaRepository.save(manga);
     }
 
@@ -368,4 +385,4 @@ public class MangaService {
             }
         }
     }
-} 
+}
