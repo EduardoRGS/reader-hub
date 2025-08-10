@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { Chapter } from '@/types/manga';
+import Image from 'next/image';
 
 interface WebtoonReadingModeProps {
   chapter: Chapter;
@@ -17,6 +19,15 @@ export default function WebtoonReadingMode({
   onImageLoad,
   onImageError,
 }: WebtoonReadingModeProps) {
+  const [dimensions, setDimensions] = useState<Record<number, { w: number; h: number }>>({});
+
+  const handleLoaded = (index: number, img: HTMLImageElement) => {
+    if (img?.naturalWidth && img?.naturalHeight) {
+      setDimensions((prev) => ({ ...prev, [index]: { w: img.naturalWidth, h: img.naturalHeight } }));
+    }
+    onImageLoad(index);
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -52,13 +63,20 @@ export default function WebtoonReadingMode({
               </div>
             )}
             
-            <img
-              src={imageUrl}
-              alt={`Página ${index + 1} do capítulo`}
-              className={`w-full rounded-lg shadow-md ${imageLoading[index + 1] !== false ? 'hidden' : ''}`}
-              onLoad={() => onImageLoad(index + 1)}
-              onError={() => onImageError(index + 1)}
-            />
+            <div className={`w-full ${imageLoading[index + 1] !== false ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
+              <Image
+                src={imageUrl}
+                alt={`Página ${index + 1} do capítulo`}
+                width={dimensions[index + 1]?.w ?? 1200}
+                height={dimensions[index + 1]?.h ?? 2400}
+                sizes="100vw"
+                className="w-full h-auto rounded-lg shadow-md"
+                onLoadingComplete={(img) => handleLoaded(index + 1, img)}
+                onError={() => onImageError(index + 1)}
+                unoptimized
+                priority={index < 2}
+              />
+            </div>
           </div>
         ))}
       </div>

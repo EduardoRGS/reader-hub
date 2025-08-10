@@ -1,6 +1,7 @@
 'use client';
 
 import { Chapter } from '@/types/manga';
+import Image from 'next/image';
 
 interface DefaultReadingModeProps {
   chapter: Chapter;
@@ -66,30 +67,23 @@ export default function DefaultReadingMode({
             </div>
           </div>
         )}
-        
-        <img
-          src={chapter.imageUrls![currentPage - 1]}
-          alt={`Página ${currentPage} do capítulo`}
-          className={`max-w-full h-auto rounded-lg shadow-md ${imageLoading[currentPage] !== false ? 'hidden' : ''}`}
-          onLoad={() => onImageLoad(currentPage)}
-          onError={(e) => {
-            onImageError(currentPage);
-            // Fallback para imagem quebrada
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const fallback = document.createElement('div');
-            fallback.className = 'w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center';
-            fallback.style.aspectRatio = '3/4';
-            fallback.innerHTML = `
-              <div class="text-center text-gray-500 dark:text-gray-400">
-                <div class="text-4xl mb-2">📖</div>
-                <p class="text-sm">Página ${currentPage}</p>
-                <p class="text-xs mt-1">Imagem não disponível</p>
-              </div>
-            `;
-            target.parentNode?.appendChild(fallback);
-          }}
-        />
+
+        <div
+          className={`relative w-full ${imageLoading[currentPage] !== false ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+          style={{ aspectRatio: '3/4' }}
+        >
+          <Image
+            src={chapter.imageUrls![currentPage - 1]}
+            alt={`Página ${currentPage} do capítulo`}
+            fill
+            sizes="100vw"
+            className="object-contain rounded-lg shadow-md"
+            priority={currentPage === 1}
+            onLoad={() => onImageLoad(currentPage)}
+            onLoadingComplete={() => onImageLoad(currentPage)}
+            onError={() => onImageError(currentPage)}
+          />
+        </div>
       </div>
 
       {/* Barra de progresso */}

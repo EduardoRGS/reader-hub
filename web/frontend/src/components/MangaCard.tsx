@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { MangaCardProps } from '@/types/manga';
 import { usePrefetch } from '@/hooks/usePrefetch';
+import Image from 'next/image';
 
 export default function MangaCard({ manga, variant = 'featured' }: MangaCardProps) {
   const router = useRouter();
@@ -45,14 +46,13 @@ export default function MangaCard({ manga, variant = 'featured' }: MangaCardProp
     >
       {/* Imagem de fundo */}
       <div className="absolute inset-0">
-        <img
-          src={imageUrl}
+        <Image
+          src={imageUrl || '/placeholder-manga.jpg'}
           alt={title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/placeholder-manga.jpg';
-          }}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-110"
+          priority={variant === 'featured'}
         />
         {/* Overlay gradiente */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
