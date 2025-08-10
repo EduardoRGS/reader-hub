@@ -23,7 +23,6 @@ interface ReaderState {
   themeMode: ThemeMode;
   autoAdvance: boolean;
   autoNextChapter: boolean;
-  showPageNumbers: boolean;
   showPageNumber: boolean;
   readingHistory: ReadingHistoryEntry[];
   isHydrated: boolean;
@@ -31,7 +30,6 @@ interface ReaderState {
   setThemeMode: (mode: ThemeMode) => void;
   setAutoAdvance: (auto: boolean) => void;
   setAutoNextChapter: (auto: boolean) => void;
-  setShowPageNumbers: (show: boolean) => void;
   setShowPageNumber: (show: boolean) => void;
   addToHistory: (progress: Omit<ReadingProgress, 'lastRead'>) => void;
   updateReadingProgress: (progress: Omit<ReadingProgress, 'lastRead'>) => void;
@@ -47,12 +45,11 @@ const getSystemTheme = (): ThemeMode => {
   return 'light';
 };
 
-const initialState: Omit<ReaderState, 'setReadingMode' | 'setThemeMode' | 'setAutoAdvance' | 'setAutoNextChapter' | 'setShowPageNumbers' | 'setShowPageNumber' | 'addToHistory' | 'updateReadingProgress' | 'getLastReadChapter' | 'clearReadingHistory' | 'setIsHydrated'> = {
+const initialState: Omit<ReaderState, 'setReadingMode' | 'setThemeMode' | 'setAutoAdvance' | 'setAutoNextChapter' | 'setShowPageNumber' | 'addToHistory' | 'updateReadingProgress' | 'getLastReadChapter' | 'clearReadingHistory' | 'setIsHydrated'> = {
   readingMode: 'default',
   themeMode: getSystemTheme(),
   autoAdvance: false,
   autoNextChapter: false,
-  showPageNumbers: true,
   showPageNumber: true,
   readingHistory: [],
   isHydrated: false,
@@ -69,7 +66,6 @@ export const useReaderStore = create<ReaderState>()(
       setThemeMode: (mode) => set({ themeMode: mode }),
       setAutoAdvance: (auto) => set({ autoAdvance: auto }),
       setAutoNextChapter: (auto) => set({ autoNextChapter: auto }),
-      setShowPageNumbers: (show) => set({ showPageNumbers: show }),
       setShowPageNumber: (show) => set({ showPageNumber: show }),
       
       addToHistory: (progress) => {
@@ -123,7 +119,7 @@ export const useReaderStore = create<ReaderState>()(
         themeMode: state.themeMode,
         autoAdvance: state.autoAdvance,
         autoNextChapter: state.autoNextChapter,
-        showPageNumbers: state.showPageNumbers,
+        showPageNumber: state.showPageNumber,
         readingHistory: state.readingHistory,
       }),
       onRehydrateStorage: () => (state) => {
