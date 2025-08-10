@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { mangaService, getMangaById, getChaptersByMangaId, getChapterWithImages } from '@/services/api';
 export const queryKeys = {
   mangas: ['mangas'] as const,
@@ -21,7 +21,8 @@ export const queryKeys = {
 export function useMangas(limit: number = 20, offset: number = 0) {
   return useQuery({
     queryKey: queryKeys.mangasPaginated(limit, offset),
-    queryFn: () => mangaService.getMangas(limit, offset),
+    queryFn: ({ signal }) => mangaService.getMangas(limit, offset, signal),
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -29,7 +30,8 @@ export function useMangas(limit: number = 20, offset: number = 0) {
 export function useMangasByStatus(status: string, limit: number = 20, offset: number = 0) {
   return useQuery({
     queryKey: queryKeys.mangasByStatus(status, limit, offset),
-    queryFn: () => mangaService.getMangasByStatus(status, limit, offset),
+    queryFn: ({ signal }) => mangaService.getMangasByStatus(status, limit, offset, signal),
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -37,7 +39,7 @@ export function useMangasByStatus(status: string, limit: number = 20, offset: nu
 export function useFeaturedMangas() {
   return useQuery({
     queryKey: queryKeys.featured(),
-    queryFn: () => mangaService.getFeaturedMangas(),
+    queryFn: ({ signal }) => mangaService.getFeaturedMangas(undefined, signal),
     staleTime: 10 * 60 * 1000,
   });
 }
@@ -45,7 +47,7 @@ export function useFeaturedMangas() {
 export function usePopularMangas() {
   return useQuery({
     queryKey: queryKeys.popular(),
-    queryFn: () => mangaService.getPopularMangas(),
+    queryFn: ({ signal }) => mangaService.getPopularMangas(undefined, signal),
     staleTime: 10 * 60 * 1000,
   });
 }
@@ -53,7 +55,7 @@ export function usePopularMangas() {
 export function useCategories() {
   return useQuery({
     queryKey: queryKeys.categories,
-    queryFn: () => mangaService.getCategories(),
+    queryFn: ({ signal }) => mangaService.getCategories(signal),
     staleTime: 30 * 60 * 1000,
   });
 }
@@ -61,7 +63,7 @@ export function useCategories() {
 export function useMangaById(id: string) {
   return useQuery({
     queryKey: queryKeys.manga(id),
-    queryFn: () => getMangaById(id),
+    queryFn: ({ signal }) => getMangaById(id, signal),
     enabled: !!id,
     staleTime: 10 * 60 * 1000,
   });
@@ -70,7 +72,7 @@ export function useMangaById(id: string) {
 export function useMangaCover(id: string) {
   return useQuery({
     queryKey: queryKeys.mangaCover(id),
-    queryFn: () => mangaService.getMangaCover(id),
+    queryFn: ({ signal }) => mangaService.getMangaCover(id, signal),
     enabled: !!id,
     staleTime: 30 * 60 * 1000,
   });
@@ -79,35 +81,40 @@ export function useMangaCover(id: string) {
 export function useChaptersByMangaId(mangaId: string) {
   return useQuery({
     queryKey: queryKeys.chapters(mangaId),
-    queryFn: () => getChaptersByMangaId(mangaId),
+    queryFn: ({ signal }) => getChaptersByMangaId(mangaId, signal),
     enabled: !!mangaId,
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: 'always',
+    gcTime: 30 * 60 * 1000,
   });
 }
 
 export function useChapterWithImages(chapterId: string) {
   return useQuery({
     queryKey: queryKeys.chapter(chapterId),
-    queryFn: () => getChapterWithImages(chapterId),
+    queryFn: ({ signal }) => getChapterWithImages(chapterId, signal),
     enabled: !!chapterId,
     staleTime: 10 * 60 * 1000,
+    refetchOnMount: 'always',
+    gcTime: 30 * 60 * 1000,
   });
 }
 
 export function useInfiniteMangas(status: string = 'all', limit: number = 20) {
   return useInfiniteQuery({
     queryKey: queryKeys.infiniteMangas(status, limit),
-    queryFn: ({ pageParam = 0 }) => {
+    queryFn: ({ pageParam = 0, signal }) => {
       if (status === 'all') {
-        return mangaService.getMangas(limit, pageParam);
+        return mangaService.getMangas(limit, pageParam, signal);
       }
-      return mangaService.getMangasByStatus(status, limit, pageParam);
+      return mangaService.getMangasByStatus(status, limit, pageParam, signal);
     },
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.number >= lastPage.totalPages - 1) return undefined;
       return allPages.length * limit;
     },
     initialPageParam: 0,
+    maxPages: 5,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -115,8 +122,9 @@ export function useInfiniteMangas(status: string = 'all', limit: number = 20) {
 export function useSearchExternalMangas(query: string, limit: number = 20, offset: number = 0) {
   return useQuery({
     queryKey: queryKeys.searchExternal(query, limit, offset),
-    queryFn: () => mangaService.searchExternalMangas(query, limit, offset),
+    queryFn: ({ signal }) => mangaService.searchExternalMangas(query, limit, offset, signal),
     enabled: !!query && query.length > 2,
+    placeholderData: keepPreviousData,
     staleTime: 2 * 60 * 1000,
   });
 }

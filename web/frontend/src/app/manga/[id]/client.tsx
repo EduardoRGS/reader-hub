@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { useMangaDetails } from '@/hooks/useMangaDetails';
 import { useRouter } from 'next/navigation';
 import { useReaderStoreHydrated } from '@/hooks/useHydration';
@@ -78,10 +79,13 @@ export default function MangaPageClient({ id }: { id: string }) {
           <div className="lg:col-span-1">
             <Card className="overflow-hidden">
               <div className="aspect-[3/4] relative">
-                <img
+                <Image
                   src={manga.coverImage || manga.image || '/placeholder-manga.jpg'}
                   alt={manga.title['pt-br'] || manga.title['en']}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 1024px) 50vw, 25vw"
+                  className="object-cover"
+                  priority
                 />
               </div>
             </Card>

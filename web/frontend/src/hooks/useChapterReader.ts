@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMangaById, useChaptersByMangaId, useChapterWithImages } from './queries';
 import { useReaderStoreHydrated } from './useHydration';
@@ -39,7 +39,7 @@ export function useChapterReader(mangaId?: string, chapterId?: string) {
   const chapterQuery = useChapterWithImages(chapterIdValue);
 
   const manga = mangaQuery.data || null;
-  const chapters = chaptersQuery.data || [];
+  const chapters = useMemo(() => chaptersQuery.data || [], [chaptersQuery.data]);
   const chapter = chapterQuery.data || null;
 
   const loading = mangaQuery.isLoading || chaptersQuery.isLoading || chapterQuery.isLoading;
@@ -56,8 +56,10 @@ export function useChapterReader(mangaId?: string, chapterId?: string) {
         initialLoadingState[index + 1] = true;
       });
       setImageLoading(initialLoadingState);
+    } else {
+      setImageLoading({});
     }
-  }, [chapter]);
+  }, [chapter?.id, chapter?.imageUrls]);
   
   // Sincronizar modo de leitura com o estado global
   useEffect(() => {
@@ -68,12 +70,10 @@ export function useChapterReader(mangaId?: string, chapterId?: string) {
   useEffect(() => {
     if (mangaIdValue && chapterIdValue && chapter) {
       const lastProgress = getLastReadChapter(mangaIdValue);
-      
-      // Se estamos no mesmo capítulo que foi lido por último, restaurar a página
       if (lastProgress && lastProgress.chapterId === chapterIdValue) {
         setCurrentPage(lastProgress.page);
       } else {
-        setCurrentPage(1); // Começar do início para um novo capítulo
+        setCurrentPage(1);
       }
     }
   }, [mangaIdValue, chapterIdValue, chapter, getLastReadChapter]);
@@ -119,8 +119,8 @@ export function useChapterReader(mangaId?: string, chapterId?: string) {
   // Prefetch próximo capítulo
   useEffect(() => {
     if (chapter && chapters.length) {
-      const currentIndex = chapters.findIndex(ch => ch.id === chapter.id);
-      if (currentIndex < chapters.length - 1) {
+      const currentIndex = chapters.findIndex((ch) => ch.id === chapter.id);
+      if (currentIndex >= 0 && currentIndex < chapters.length - 1) {
         const nextChapter = chapters[currentIndex + 1];
         prefetchChapter(nextChapter.id);
       }
@@ -128,6 +128,54 @@ export function useChapterReader(mangaId?: string, chapterId?: string) {
   }, [chapter, chapters, prefetchChapter]);
 
   // Controles de teclado
+  const goToPreviousChapter = useCallback(() => {
+    if (!chapter || !chapters.length) return;
+    const currentIndex = chapters.findIndex((ch) => ch.id === chapter.id);
+    if (currentIndex > 0) {
+      const prevChapter = chapters[currentIndex - 1];
+      router.push(`/manga/${mangaIdValue}/chapter/${prevChapter.id}`);
+    }
+  }, [chapter, chapters, mangaIdValue, router]);
+
+  const goToNextChapter = useCallback(() => {
+    if (!chapter || !chapters.length) return;
+    const currentIndex = chapters.findIndex((ch) => ch.id === chapter.id);
+    if (currentIndex < chapters.length - 1) {
+      const nextChapter = chapters[currentIndex + 1];
+      router.push(`/manga/${mangaIdValue}/chapter/${nextChapter.id}`);
+    }
+  }, [chapter, chapters, mangaIdValue, router]);
+
+  const goToMangaPage = useCallback(() => {
+    router.push(`/manga/${mangaIdValue}`);
+  }, [mangaIdValue, router]);
+
+  const goToChapter = useCallback((chapterId: string) => {
+    setShowChapterSelector(false);
+    setCurrentPage(1);
+    router.push(`/manga/${mangaIdValue}/chapter/${chapterId}`);
+  }, [mangaIdValue, router]);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const goToNextPage = useCallback(() => {
+    if (currentPage < totalPages) {
+      setCurrentPage((p) => p + 1);
+    } else if (autoNextChapter) {
+      goToNextChapter();
+    }
+  }, [currentPage, totalPages, autoNextChapter, goToNextChapter]);
+
+  const goToPreviousPage = useCallback(() => {
+    if (currentPage > 1) {
+      setCurrentPage((p) => p - 1);
+    } else {
+      goToPreviousChapter();
+    }
+  }, [currentPage, goToPreviousChapter]);
+
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       switch (event.key) {
@@ -186,63 +234,12 @@ export function useChapterReader(mangaId?: string, chapterId?: string) {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [chapter, chapters, currentPage, totalPages, readingMode, showChapterSelector, showScrollToTop]);
+  }, [goToPreviousChapter, goToNextChapter, goToPreviousPage, goToNextPage, goToMangaPage, scrollToTop, readingMode, showChapterSelector, showScrollToTop, totalPages]);
 
   // Funções de navegação
-  const goToNextChapter = useCallback(() => {
-    if (!chapter || !chapters.length) return;
-    
-    const currentIndex = chapters.findIndex(ch => ch.id === chapter.id);
-    if (currentIndex < chapters.length - 1) {
-      const nextChapter = chapters[currentIndex + 1];
-      router.push(`/manga/${mangaIdValue}/chapter/${nextChapter.id}`);
-    }
-  }, [chapter, chapters, mangaIdValue, router]);
+  // goToNextChapter já está declarado acima
 
-  const goToPreviousChapter = () => {
-    if (!chapter || !chapters.length) return;
-    
-    const currentIndex = chapters.findIndex(ch => ch.id === chapter.id);
-    if (currentIndex > 0) {
-      const prevChapter = chapters[currentIndex - 1];
-      router.push(`/manga/${mangaIdValue}/chapter/${prevChapter.id}`);
-    }
-  };
-
-  const goToMangaPage = () => {
-    router.push(`/manga/${mangaIdValue}`);
-  };
-
-  const goToChapter = (chapterId: string) => {
-    setShowChapterSelector(false);
-    setCurrentPage(1); // Reset para primeira página
-    router.push(`/manga/${mangaIdValue}/chapter/${chapterId}`);
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    } else if (autoNextChapter) {
-      // Avançar para o próximo capítulo automaticamente se a opção estiver ativada
-      goToNextChapter();
-    }
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    } else {
-      // Voltar para o capítulo anterior e ir para a última página
-      goToPreviousChapter();
-    }
-  };
+  // goToNextChapter já é useCallback acima
 
   const handleImageLoad = (index: number) => {
     setImageLoading(prev => ({ ...prev, [index]: false }));
