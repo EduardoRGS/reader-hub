@@ -34,7 +34,6 @@ export function useLibrary() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Buscar por:', searchTerm);
   };
 
   const goToPage = () => {
