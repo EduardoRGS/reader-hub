@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { Manga, Chapter, PaginatedResponse } from '@/types/manga';
+import { Manga, Chapter, PaginatedResponse, BackendChapterResponseDto } from '@/types/manga';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -60,9 +60,13 @@ export interface Category {
 
 export const mangaService = {
   // Buscar mangás do banco local
-  getMangas: async (limit: number = 20, offset: number = 0): Promise<PaginatedResponse<Manga>> => {
+  getMangas: async (
+    limit: number = 20,
+    offset: number = 0,
+    signal?: AbortSignal
+  ): Promise<PaginatedResponse<Manga>> => {
     try {
-      const response = await api.get(`/api/manga?limit=${limit}&offset=${offset}`);
+      const response = await api.get(`/api/manga?limit=${limit}&offset=${offset}`, { signal });
       return response.data;
     } catch (error) {
         return handleApiError(error);
@@ -70,9 +74,9 @@ export const mangaService = {
   },
 
   // Buscar manga por ID
-  getMangaById: async (id: string): Promise<Manga> => {
+  getMangaById: async (id: string, signal?: AbortSignal): Promise<Manga> => {
     try {
-      const response = await api.get(`/api/manga/local/${id}`);
+      const response = await api.get(`/api/manga/local/${id}`, { signal });
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -80,9 +84,14 @@ export const mangaService = {
   },
 
   // Buscar mangás por status
-  getMangasByStatus: async (status: string, limit: number = 20, offset: number = 0): Promise<PaginatedResponse<Manga>> => {
+  getMangasByStatus: async (
+    status: string,
+    limit: number = 20,
+    offset: number = 0,
+    signal?: AbortSignal
+  ): Promise<PaginatedResponse<Manga>> => {
     try {
-      const response = await api.get(`/api/manga?status=${status}&limit=${limit}&offset=${offset}`);
+      const response = await api.get(`/api/manga?status=${status}&limit=${limit}&offset=${offset}`, { signal });
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -90,9 +99,9 @@ export const mangaService = {
   },
 
   // Buscar mangás em destaque (com maior rating)
-  getFeaturedMangas: async (limit: number = 4): Promise<Manga[]> => {
+  getFeaturedMangas: async (limit: number = 4, signal?: AbortSignal): Promise<Manga[]> => {
     try {
-      const response = await api.get(`/api/manga?limit=${limit}&sort=rating,desc`);
+      const response = await api.get(`/api/manga?limit=${limit}&sort=rating,desc`, { signal });
       return response.data.content || [];
     } catch (error) {
       return handleApiError(error);
@@ -100,9 +109,9 @@ export const mangaService = {
   },
 
   // Buscar mangás populares (com mais views)
-  getPopularMangas: async (limit: number = 6): Promise<Manga[]> => {
+  getPopularMangas: async (limit: number = 6, signal?: AbortSignal): Promise<Manga[]> => {
     try {
-      const response = await api.get(`/api/manga?limit=${limit}&sort=views,desc`);
+      const response = await api.get(`/api/manga?limit=${limit}&sort=views,desc`, { signal });
       return response.data.content || [];
     } catch (error) {
       return handleApiError(error);
@@ -110,9 +119,9 @@ export const mangaService = {
   },
 
   // Buscar categorias
-  getCategories: async (): Promise<Category[]> => {
+  getCategories: async (signal?: AbortSignal): Promise<Category[]> => {
     try {
-      const response = await api.get('/api/manga/categories');
+      const response = await api.get('/api/manga/categories', { signal });
       return response.data || [];
     } catch {
       // Se não houver endpoint de categorias, retornar categorias padrão
@@ -130,9 +139,9 @@ export const mangaService = {
   },
 
   // Buscar capa do manga
-  getMangaCover: async (mangaId: string): Promise<string> => {
+  getMangaCover: async (mangaId: string, signal?: AbortSignal): Promise<string> => {
     try {
-      const response = await api.get(`/api/manga/external/${mangaId}/cover`);
+      const response = await api.get(`/api/manga/external/${mangaId}/cover`, { signal });
       return response.data.coverUrl;
     } catch (error) {
       return handleApiError(error);
@@ -140,9 +149,16 @@ export const mangaService = {
   },
 
   // Buscar mangás da API externa
-  searchExternalMangas: async (query: string, limit: number = 20, offset: number = 0): Promise<PaginatedResponse<Manga>> => {
+  searchExternalMangas: async (
+    query: string,
+    limit: number = 20,
+    offset: number = 0,
+    signal?: AbortSignal
+  ): Promise<PaginatedResponse<Manga>> => {
     try {
-      const response = await api.get(`/api/manga/external?title=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`);
+      const response = await api.get(`/api/manga/external?title=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`,
+        { signal }
+      );
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -151,25 +167,46 @@ export const mangaService = {
 };
 
 // Funções para a página do mangá
-export const getMangaById = async (id: string): Promise<Manga> => {
-  return mangaService.getMangaById(id);
+export const getMangaById = async (id: string, signal?: AbortSignal): Promise<Manga> => {
+  return mangaService.getMangaById(id, signal);
 };
 
-export const getChaptersByMangaId = async (mangaId: string): Promise<Chapter[]> => {
+export const getChaptersByMangaId = async (mangaId: string, signal?: AbortSignal): Promise<Chapter[]> => {
   try {
-    const response = await api.get(`/api/chapter/local/manga/${mangaId}`);
-    return response.data || [];
+    const response = await api.get(`/api/chapter/local/manga/${mangaId}`, { signal });
+    const data = (response.data as BackendChapterResponseDto[]) || [];
+    return data.map(mapChapterResponseToChapter);
   } catch (error) {
     return handleApiError(error);
   }
 };
 
 // Buscar capítulo específico com imagens
-export const getChapterWithImages = async (chapterId: string): Promise<Chapter | null> => {
+export const getChapterWithImages = async (chapterId: string, signal?: AbortSignal): Promise<Chapter | null> => {
   try {
-    const response = await api.get(`/api/chapter/local/${chapterId}/with-pages`);
-    return response.data;
+    const response = await api.get(`/api/chapter/local/${chapterId}/with-pages`, { signal });
+    const dto = response.data as BackendChapterResponseDto;
+    return dto ? mapChapterResponseToChapter(dto) : null;
   } catch (error) {
     return handleApiError(error);
   }
 };
+
+// Mapeia ChapterResponseDto (backend) -> Chapter (frontend)
+function mapChapterResponseToChapter(dto: BackendChapterResponseDto): Chapter {
+  const numberValue: number = dto.chapter
+    ? typeof dto.chapter === 'number'
+      ? dto.chapter
+      : parseFloat(String(dto.chapter).replace(',', '.'))
+    : 0;
+  return {
+    id: dto.id,
+    number: Number.isFinite(numberValue) ? numberValue : 0,
+    title: dto.title ?? undefined,
+    pages: dto.pages ?? undefined,
+    releaseDate: dto.publishedAt ?? dto.readableAt ?? dto.createdAt ?? undefined,
+    isRead: undefined,
+    mangaId: dto.mangaId ?? dto.manga?.id,
+    imageUrls: dto.imageUrls ?? undefined,
+  } as Chapter;
+}

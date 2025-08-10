@@ -41,6 +41,27 @@ export interface Chapter {
   imageUrls?: string[]; // URLs das imagens do capítulo
 }
 
+// DTO vindo do backend (ChapterResponseDto)
+export interface BackendChapterResponseDto {
+  id: string;
+  apiId?: string;
+  title?: string;
+  volume?: string;
+  chapter?: string | number;
+  pages?: number;
+  status?: string;
+  language?: string;
+  publishedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  readableAt?: string;
+  views?: number;
+  comments?: number;
+  imageUrls?: string[];
+  mangaId?: string;
+  manga?: { id: string };
+}
+
 export interface Category {
   name: string;
   count: number;
