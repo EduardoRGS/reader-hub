@@ -47,24 +47,42 @@ public class MangaService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "mangas", key = "#id")
     public Optional<Manga> findById(String id) {
-        log.debug("Buscando manga por ID: {}", id);
+        log.debug("Buscando manga por ID (sem cache): {}", id);
         return mangaRepository.findById(id);
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "mangas", key = "'with-author-' + #id")
+    @Cacheable(value = "mangas", key = "#id")
+    public Manga getByIdCached(String id) {
+        log.debug("Buscando manga por ID (com cache de entidade): {}", id);
+        return mangaRepository.findById(id).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<Manga> findByIdWithAuthor(String id) {
-        log.debug("Buscando manga com autor por ID: {}", id);
+        log.debug("Buscando manga com autor por ID (sem cache): {}", id);
         return mangaRepository.findByIdWithAuthor(id);
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "mangas", key = "'with-chapters-' + #id")
+    @Cacheable(value = "mangas", key = "'with-author-' + #id")
+    public Manga getByIdWithAuthorCached(String id) {
+        log.debug("Buscando manga com autor por ID (com cache de entidade): {}", id);
+        return mangaRepository.findByIdWithAuthor(id).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<Manga> findByIdWithChapters(String id) {
-        log.debug("Buscando manga com capítulos por ID: {}", id);
+        log.debug("Buscando manga com capítulos por ID (sem cache): {}", id);
         return mangaRepository.findByIdWithChapters(id);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "mangas", key = "'with-chapters-' + #id")
+    public Manga getByIdWithChaptersCached(String id) {
+        log.debug("Buscando manga com capítulos por ID (com cache de entidade): {}", id);
+        return mangaRepository.findByIdWithChapters(id).orElse(null);
     }
 
     @Caching(evict = {
