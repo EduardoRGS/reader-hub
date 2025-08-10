@@ -20,12 +20,11 @@ export function useReaderStoreHydrated() {
   const store = useReaderStore();
 
   if (!hydrated) {
-    // Retorna valores padrão durante a hidratação
     return {
       ...store,
       readingMode: 'default' as const,
       themeMode: 'light' as const,
-      autoNextChapter: true,
+      autoNextChapter: false,
       showPageNumber: true,
       readingHistory: [],
     };
