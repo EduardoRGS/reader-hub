@@ -2,7 +2,7 @@ package com.reader_hub.domain.service;
 
 import com.reader_hub.application.dto.AuthorDto;
 import com.reader_hub.application.dto.CreateMangaDto;
-import com.reader_hub.application.dto.MangaDto;
+import com.reader_hub.application.dto.ExternalMangaDto;
 import com.reader_hub.application.dto.MangaResponseDto;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Author;
@@ -247,7 +247,7 @@ public class MangaService {
     // =====================================
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
-    public Manga createManga(MangaDto mangaDto) {
+    public Manga createManga(ExternalMangaDto mangaDto) {
         // Verificar se já existe um manga com o mesmo apiId
         if (mangaRepository.existsByApiId(mangaDto.getId())) {
             throw new RuntimeException("Manga já existe com o apiId: " + mangaDto.getId());
@@ -353,7 +353,7 @@ public class MangaService {
     /**
      * Converte DTO para entidade
      */
-    private Manga convertDtoToEntity(MangaDto mangaDto) {
+    private Manga convertDtoToEntity(ExternalMangaDto mangaDto) {
         Manga manga = new Manga();
         manga.setApiId(mangaDto.getId());
         manga.setTitle(mangaDto.getAttributes() != null ? mangaDto.getAttributes().getTitle() : null);
@@ -372,8 +372,8 @@ public class MangaService {
     /**
      * Processa relacionamentos de autor
      */
-    private void processAuthorRelationships(Manga manga, List<MangaDto.SimpleRelationship> relationships) {
-        Optional<MangaDto.SimpleRelationship> authorRelation = relationships.stream()
+    private void processAuthorRelationships(Manga manga, List<ExternalMangaDto.SimpleRelationship> relationships) {
+        Optional<ExternalMangaDto.SimpleRelationship> authorRelation = relationships.stream()
             .filter(rel -> "author".equals(rel.getType()))
             .findFirst();
 

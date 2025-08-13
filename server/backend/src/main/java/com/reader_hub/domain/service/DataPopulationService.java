@@ -1,7 +1,7 @@
 package com.reader_hub.domain.service;
 
 import com.reader_hub.application.dto.AuthorDto;
-import com.reader_hub.application.dto.MangaDto;
+import com.reader_hub.application.dto.ExternalMangaDto;
 import com.reader_hub.application.dto.PaginatedDto;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Chapter;
@@ -52,13 +52,13 @@ public class DataPopulationService {
     /**
      * Método genérico para popular mangás eliminando duplicação
      */
-    public PopulationResult populateMangas(PaginatedDto<MangaDto> mangaDtoPage, String operationType) {
+    public PopulationResult populateMangas(PaginatedDto<ExternalMangaDto> mangaDtoPage, String operationType) {
         log.info("Iniciando {} - {} mangás encontrados", operationType, mangaDtoPage.getTotal());
 
         int savedCount = 0;
         int authorsSavedCount = 0;
 
-        for (MangaDto mangaDto : mangaDtoPage.getData()) {
+        for (ExternalMangaDto mangaDto : mangaDtoPage.getData()) {
             try {
                 // Primeiro, salvar autores relacionados
                 authorsSavedCount += processRelatedAuthors(mangaDto);
@@ -81,11 +81,11 @@ public class DataPopulationService {
     /**
      * Processa autores relacionados a um manga
      */
-    private int processRelatedAuthors(MangaDto mangaDto) {
+    private int processRelatedAuthors(ExternalMangaDto mangaDto) {
         int count = 0;
         
         if (mangaDto.getRelationships() != null) {
-            for (MangaDto.SimpleRelationship relationship : mangaDto.getRelationships()) {
+            for (ExternalMangaDto.SimpleRelationship relationship : mangaDto.getRelationships()) {
                 if ("author".equals(relationship.getType())) {
                     try {
                         Optional<AuthorDto> authorDto = apiService.getAuthorById(relationship.getId());
@@ -107,7 +107,7 @@ public class DataPopulationService {
      * Popular mangás populares
      */
     public PopulationResult populatePopularMangas(Integer limit, Integer offset) {
-        PaginatedDto<MangaDto> popularMangas = apiService.getPopularMangas(limit, offset);
+        PaginatedDto<ExternalMangaDto> popularMangas = apiService.getPopularMangas(limit, offset);
         return populateMangas(popularMangas, "População de mangás populares");
     }
 
@@ -115,7 +115,7 @@ public class DataPopulationService {
      * Popular mangás recentes
      */
     public PopulationResult populateRecentMangas(Integer limit, Integer offset) {
-        PaginatedDto<MangaDto> recentMangas = apiService.getRecentMangas(limit, offset);
+        PaginatedDto<ExternalMangaDto> recentMangas = apiService.getRecentMangas(limit, offset);
         return populateMangas(recentMangas, "População de mangás recentes");
     }
 
@@ -123,10 +123,10 @@ public class DataPopulationService {
      * Buscar e salvar mangás por título
      */
     public PopulationResult searchAndSaveMangas(String title, Integer limit, Integer offset) {
-        List<MangaDto> searchResults = apiService.searchMangas(title, limit, offset);
+        List<ExternalMangaDto> searchResults = apiService.searchMangas(title, limit, offset);
         
         // Converter List para PaginatedDto para reutilizar o método
-        PaginatedDto<MangaDto> paginatedResults = new PaginatedDto<>(
+        PaginatedDto<ExternalMangaDto> paginatedResults = new PaginatedDto<>(
             searchResults, 
             searchResults.size(), 
             offset, 
@@ -227,4 +227,4 @@ public class DataPopulationService {
         
         log.info("Atualização concluída. {} mangas atualizados.", updatedCount);
     }
-} 
+}

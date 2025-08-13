@@ -1,15 +1,16 @@
 package com.reader_hub.application.ports;
 
 import com.reader_hub.application.dto.*;
+import com.reader_hub.application.dto.ExternalMangaDto;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface ApiService {
     // Busca de mangas
-    Optional<MangaDto> getMangaById(String id);
-    List<MangaDto> searchMangas(String query, Integer limit, Integer offset);
-    PaginatedDto<MangaDto> getMangas(Integer limit, Integer offset);
+    Optional<ExternalMangaDto> getMangaById(String id);
+    List<ExternalMangaDto> searchMangas(String query, Integer limit, Integer offset);
+    PaginatedDto<ExternalMangaDto> getMangas(Integer limit, Integer offset);
     
     // Busca de autores
     Optional<AuthorDto> getAuthorById(String id);
@@ -24,6 +25,6 @@ public interface ApiService {
     String getMangaCoverUrl(String mangaId);
     
     // Métodos adicionais para busca especializada
-    PaginatedDto<MangaDto> getPopularMangas(Integer limit, Integer offset);
-    PaginatedDto<MangaDto> getRecentMangas(Integer limit, Integer offset);
+    PaginatedDto<ExternalMangaDto> getPopularMangas(Integer limit, Integer offset);
+    PaginatedDto<ExternalMangaDto> getRecentMangas(Integer limit, Integer offset);
 }

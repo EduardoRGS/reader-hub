@@ -43,6 +43,7 @@ dependencies {
 	implementation 'io.micrometer:micrometer-registry-prometheus'
 	
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 	
 	runtimeOnly 'org.postgresql:postgresql'
 	

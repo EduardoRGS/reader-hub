@@ -1,10 +1,6 @@
 package com.reader_hub.application.controller;
 
-import com.reader_hub.application.dto.CreateMangaDto;
-import com.reader_hub.application.dto.MangaDto;
-import com.reader_hub.application.dto.MangaResponseDto;
-import com.reader_hub.application.dto.PaginatedDto;
-import com.reader_hub.application.dto.PaginatedResponseDto;
+import com.reader_hub.application.dto.*;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Manga;
 import com.reader_hub.domain.service.MangaService;
@@ -54,7 +50,7 @@ public class MangaController {
     })
     @Tag(name = "🌐 API Externa")
     @GetMapping("/external")
-    public PaginatedDto<MangaDto> getExternalMangas(
+    public PaginatedDto<ExternalMangaDto> getExternalMangas(
             @Parameter(description = "Número máximo de resultados", example = "20")
             @RequestParam(defaultValue = "20") 
             @Min(value = 1, message = "{common.limit.range}")
@@ -79,7 +75,7 @@ public class MangaController {
     })
     @Tag(name = "🌐 API Externa")
     @GetMapping("/external/{id}")
-    public Optional<MangaDto> getExternalMangaById(
+    public Optional<ExternalMangaDto> getExternalMangaById(
             @Parameter(description = "ID único do manga na API MangaDX", example = "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0")
             @PathVariable 
             @NotBlank(message = "{manga.id.required}")
@@ -202,11 +198,11 @@ public class MangaController {
                 description = "Dados do manga obtidos da API MangaDX",
                 content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = MangaDto.class)
+                    schema = @Schema(implementation = ExternalMangaDto.class)
                 )
             )
-            @Valid @RequestBody MangaDto mangaDto) {
-        Manga manga = mangaService.createManga(mangaDto);
+            @Valid @RequestBody ExternalMangaDto externalMangaDto) {
+        Manga manga = mangaService.createManga(externalMangaDto);
         return ResponseEntity.ok(MangaResponseDto.fromEntity(manga));
     }
 
@@ -259,7 +255,7 @@ public class MangaController {
     @Tag(name = "🖼️ Capas")
     @GetMapping("/external/{id}/cover")
     public ResponseEntity<Map<String, String>> getMangaCover(
-            @Parameter(description = "ID único do manga na API MangaDX",
+            @Parameter(description = "ID único do manga na API MangaDEX",
                     example = "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0")
             @PathVariable 
             @NotBlank(message = "{manga.id.required}")

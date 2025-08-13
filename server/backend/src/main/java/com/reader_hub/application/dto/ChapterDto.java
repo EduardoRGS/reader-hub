@@ -1,19 +1,22 @@
 package com.reader_hub.application.dto;
 
-import com.reader_hub.domain.model.Relationship;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Map;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ChapterDto {
     private String id;
     private String type;
     private ApiChapterAttributes attributes;
-    private List<Relationship> relationships;
+    private List<SimpleRelationship> relationships;
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ApiChapterAttributes {
         private String title;
         private String volume;
@@ -29,8 +32,15 @@ public class ChapterDto {
         private OffsetDateTime readableAt;
     }
 
-    // DTO para resposta do endpoint at-home/server
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SimpleRelationship {
+        private String id;
+        private String type;
+        private Map<String, Object> attributes;
+    }
+
+        @Data
     public static class ChapterPagesDto {
         private String result;
         private String baseUrl;
@@ -39,8 +49,8 @@ public class ChapterDto {
         @Data
         public static class ChapterData {
             private String hash;
-            private List<String> data; // nomes dos arquivos de imagem
-            private List<String> dataSaver; // versão comprimida
+            private List<String> data;
+            private List<String> dataSaver;
         }
     }
-} 
+}

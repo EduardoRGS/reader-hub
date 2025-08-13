@@ -1,6 +1,7 @@
 package com.reader_hub.application.adapter;
 
 import com.reader_hub.application.dto.*;
+import com.reader_hub.application.dto.ExternalMangaDto;
 import com.reader_hub.application.ports.ApiService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,11 +29,11 @@ public class ApiServiceImpl implements ApiService {
     }
 
     @Override
-    public Optional<MangaDto> getMangaById(String id) {
+    public Optional<ExternalMangaDto> getMangaById(String id) {
         String url = apiUrl + "/manga/" + id;
         try {
             var response = restTemplate.exchange(url, GET, null,
-                new ParameterizedTypeReference<ApiSingleResponse<MangaDto>>() {});
+                new ParameterizedTypeReference<ApiSingleResponse<ExternalMangaDto>>() {});
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return Optional.of(response.getBody().getData());
             }
@@ -44,7 +45,7 @@ public class ApiServiceImpl implements ApiService {
     }
 
     @Override
-    public List<MangaDto> searchMangas(String query, Integer limit, Integer offset) {
+    public List<ExternalMangaDto> searchMangas(String query, Integer limit, Integer offset) {
         var url = UriComponentsBuilder.fromUriString(apiUrl + "/manga")
                 .queryParam("title", query)
                 .queryParam("limit", limit != null ? limit : 20)
@@ -56,7 +57,7 @@ public class ApiServiceImpl implements ApiService {
         
         try {
             var response = restTemplate.exchange(url, GET, null,
-                    new ParameterizedTypeReference<ApiResponse<MangaDto>>() {});
+                    new ParameterizedTypeReference<ApiResponse<ExternalMangaDto>>() {});
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return response.getBody().getData();
             }
@@ -68,7 +69,7 @@ public class ApiServiceImpl implements ApiService {
     }
 
     @Override
-    public PaginatedDto<MangaDto> getMangas(Integer limit, Integer offset) {
+    public PaginatedDto<ExternalMangaDto> getMangas(Integer limit, Integer offset) {
         var url = UriComponentsBuilder.fromUriString(apiUrl + "/manga")
                 .queryParam("limit", limit != null ? limit : 20)
                 .queryParam("offset", offset != null ? offset : 0)
@@ -80,7 +81,7 @@ public class ApiServiceImpl implements ApiService {
         
         try {
             var response = restTemplate.exchange(url, GET, null,
-                    new ParameterizedTypeReference<ApiResponse<MangaDto>>() {});
+                    new ParameterizedTypeReference<ApiResponse<ExternalMangaDto>>() {});
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return new PaginatedDto<>(response.getBody().getData(),
                         response.getBody().getTotal(),
@@ -200,7 +201,7 @@ public class ApiServiceImpl implements ApiService {
     /**
      * Busca mangas populares (por seguidores)
      */
-    public PaginatedDto<MangaDto> getPopularMangas(Integer limit, Integer offset) {
+    public PaginatedDto<ExternalMangaDto> getPopularMangas(Integer limit, Integer offset) {
         var url = UriComponentsBuilder.fromUriString(apiUrl + "/manga")
                 .queryParam("limit", limit != null ? limit : 20)
                 .queryParam("offset", offset != null ? offset : 0)
@@ -212,7 +213,7 @@ public class ApiServiceImpl implements ApiService {
         
         try {
             var response = restTemplate.exchange(url, GET, null,
-                    new ParameterizedTypeReference<ApiResponse<MangaDto>>() {});
+                    new ParameterizedTypeReference<ApiResponse<ExternalMangaDto>>() {});
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return new PaginatedDto<>(response.getBody().getData(),
                         response.getBody().getTotal(),
@@ -229,7 +230,7 @@ public class ApiServiceImpl implements ApiService {
     /**
      * Busca mangas recentes
      */
-    public PaginatedDto<MangaDto> getRecentMangas(Integer limit, Integer offset) {
+    public PaginatedDto<ExternalMangaDto> getRecentMangas(Integer limit, Integer offset) {
         var url = UriComponentsBuilder.fromUriString(apiUrl + "/manga")
                 .queryParam("limit", limit != null ? limit : 20)
                 .queryParam("offset", offset != null ? offset : 0)
@@ -241,7 +242,7 @@ public class ApiServiceImpl implements ApiService {
         
         try {
             var response = restTemplate.exchange(url, GET, null,
-                    new ParameterizedTypeReference<ApiResponse<MangaDto>>() {});
+                    new ParameterizedTypeReference<ApiResponse<ExternalMangaDto>>() {});
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return new PaginatedDto<>(response.getBody().getData(),
                         response.getBody().getTotal(),
@@ -266,17 +267,17 @@ public class ApiServiceImpl implements ApiService {
         
         try {
             var response = restTemplate.exchange(url, GET, null,
-                    new ParameterizedTypeReference<ApiSingleResponse<MangaDto>>() {});
+                    new ParameterizedTypeReference<ApiSingleResponse<ExternalMangaDto>>() {});
             
             if (response.getBody() != null && 
                 response.getBody().getData() != null) {
                 
-                MangaDto manga = response.getBody().getData();
+                ExternalMangaDto manga = response.getBody().getData();
                 if (manga.getRelationships() != null) {
                     // Procurar por relacionamento do tipo cover_art
-                    for (MangaDto.SimpleRelationship relationship : manga.getRelationships()) {
+                    for (ExternalMangaDto.SimpleRelationship relationship : manga.getRelationships()) {
                         if ("cover_art".equals(relationship.getType()) && relationship.getAttributes() != null) {
-                            String fileName = relationship.getAttributes().get("fileName");
+                            String fileName = (String) relationship.getAttributes().get("fileName");
                             if (fileName != null) {
                                 // URL correta da imagem da capa
                                 return "https://uploads.mangadex.org/covers/" + mangaId + "/" + fileName;
@@ -285,10 +286,10 @@ public class ApiServiceImpl implements ApiService {
                     }
                 }
             }
-        } catch (Exception e) {
-            System.err.println("Erro ao buscar capa do manga: " + e.getMessage());
+        }catch (Exception e) {
+            System.err.println("Erro ao buscar capa do mangá: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
     }
-} 
+}

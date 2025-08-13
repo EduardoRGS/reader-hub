@@ -16,8 +16,7 @@ public class MangaStatusValidator implements ConstraintValidator<ValidMangaStatu
     
     @Override
     public void initialize(ValidMangaStatus constraintAnnotation) {
-        // Inicialização se necessário
-    }
+            }
     
     @Override
     public boolean isValid(String status, ConstraintValidatorContext context) {
@@ -27,4 +26,4 @@ public class MangaStatusValidator implements ConstraintValidator<ValidMangaStatu
         
         return VALID_STATUSES.contains(status.toLowerCase());
     }
-} 
+}

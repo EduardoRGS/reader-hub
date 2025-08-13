@@ -35,7 +35,7 @@ spring:
 
 mangadx:
   api:
-    url: https://api.mangadx.org
+    url: https://api.mangadex.org
 
 server:
   port: 8080

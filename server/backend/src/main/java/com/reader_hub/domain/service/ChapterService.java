@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -193,9 +194,17 @@ public class ChapterService {
         
         log.info("Encontrados {} capítulos para o manga {}", chaptersDto.size(), manga.getTitle());
         
-        return chaptersDto.stream()
-                .map(dto -> createChapter(dto, manga))
-                .toList();
+        List<Chapter> chapters = new ArrayList<>();
+        for (ChapterDto dto : chaptersDto) {
+            chapters.add(createChapter(dto, manga));
+            try {
+                Thread.sleep(1000); // Aumentado delay para 1000ms para respeitar limites de taxa da API de forma mais segura
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Thread interrompida durante delay: {}", e.getMessage());
+            }
+        }
+        return chapters;
     }
 
     /**
@@ -205,4 +214,4 @@ public class ChapterService {
     public long countAll() {
         return chapterRepository.count();
     }
-} 
+}

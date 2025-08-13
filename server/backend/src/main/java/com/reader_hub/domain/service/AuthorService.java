@@ -27,8 +27,7 @@ public class AuthorService {
     public Author saveAuthor(Author author) {
         log.info("Salvando autor: {}", author.getName());
         
-        // Verificar se já existe por apiId antes de salvar
-        if (author.getApiId() != null) {
+                if (author.getApiId() != null) {
             Optional<Author> existing = authorRepository.findByApiId(author.getApiId());
             if (existing.isPresent()) {
                 log.info("Autor já existe com apiId: {}", author.getApiId());
@@ -45,8 +44,7 @@ public class AuthorService {
     public Author createAuthor(AuthorDto authorDto) {
         log.info("Criando novo autor - Nome: {}", authorDto.getAttributes().getName());
         
-        // Verificar se autor já existe por apiId para evitar duplicatas
-        Optional<Author> existingAuthor = authorRepository.findByApiId(authorDto.getId());
+                Optional<Author> existingAuthor = authorRepository.findByApiId(authorDto.getId());
         if (existingAuthor.isPresent()) {
             log.info("Autor já existe com apiId: {}", authorDto.getId());
             return existingAuthor.get();
@@ -56,8 +54,7 @@ public class AuthorService {
         author.setApiId(authorDto.getId());
         author.setName(authorDto.getAttributes().getName());
         
-        // Converter corretamente Map<String, String> para Language
-        if (authorDto.getAttributes().getBiography() != null) {
+                if (authorDto.getAttributes().getBiography() != null) {
             Language biography = new Language();
             Map<String, String> bioMap = authorDto.getAttributes().getBiography();
             biography.setEn(bioMap.get("en"));
@@ -162,4 +159,4 @@ public class AuthorService {
     public long countAll() {
         return authorRepository.count();
     }
-} 
+}
