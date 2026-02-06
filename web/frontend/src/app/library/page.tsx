@@ -1,172 +1,229 @@
-'use client';
+"use client";
 
-import { Header, Footer, MangaCard } from '@/components';
-import { LibraryStats, LibraryFilters, Pagination } from '@/components/library';
-import { useLibrary } from '@/hooks/useLibrary';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
+import {
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
+import {
+  Section,
+  Container,
+  Flex,
+  Grid,
+  Heading,
+  Text,
+  Button,
+  Callout,
+  Spinner,
+} from "@radix-ui/themes";
+import { Library, AlertCircle } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useInfiniteMangas } from "@/hooks/queries";
+import { MangaCard, MangaCardSkeleton } from "@/components/manga/MangaCard";
+import { LibraryFilters } from "@/components/library/LibraryFilters";
+import { getTitle } from "@/lib/utils";
+import { useLocale } from "@/hooks/useLocale";
+import type { Manga } from "@/types/manga";
+
+const ITEMS_PER_PAGE = 20;
+const ROW_HEIGHT = 420; // altura estimada de um card + gap
+const GAP = 16;
+
+/**
+ * Calcula quantas colunas cabem com base na largura do container.
+ * Corresponde ao breakpoint Radix: initial=2, sm=3, md=4, lg=5
+ */
+function useColumnCount() {
+  const [cols, setCols] = useState(4);
+
+  useEffect(() => {
+    function update() {
+      const w = window.innerWidth;
+      if (w < 520) setCols(2);
+      else if (w < 768) setCols(3);
+      else if (w < 1024) setCols(4);
+      else setCols(5);
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return cols;
+}
 
 export default function LibraryPage() {
+  const [status, setStatus] = useState("all");
+  const [search, setSearch] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { locale, t } = useLocale();
+  const columnCount = useColumnCount();
+
   const {
-    loading,
+    data,
+    isLoading,
+    isError,
     error,
-    currentPage,
-    totalPages,
-    searchTerm,
-    statusFilter,
-    filteredMangas,
-    refetch,
-    handleSearch,
-    goToPage,
-    getStats,
-    setSearchTerm,
-    setStatusFilter,
-  } = useLibrary();
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteMangas(status, ITEMS_PER_PAGE);
 
-  const stats = getStats();
+  const allMangas = useMemo(() => {
+    const flat: Manga[] = data?.pages.flatMap((page) => page.content) ?? [];
+    if (!search.trim()) return flat;
+    const q = search.toLowerCase();
+    return flat.filter((m) => getTitle(m, locale).toLowerCase().includes(q));
+  }, [data, search, locale]);
 
-  if (loading && filteredMangas.length === 0) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="p-8 text-center">
-              <div className="flex items-center justify-center mb-4">
-                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Carregando biblioteca</h3>
-              <p className="text-muted-foreground">
-                Aguarde enquanto carregamos os mangás...
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  const totalElements = data?.pages[0]?.totalElements ?? 0;
 
-  if (error && filteredMangas.length === 0) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="p-8 text-center">
-              <div className="flex items-center justify-center mb-4">
-                <AlertTriangle className="h-12 w-12 text-destructive" />
-              </div>
-              <CardTitle className="text-xl mb-2">
-                Erro ao carregar biblioteca
-              </CardTitle>
-              <p className="text-muted-foreground mb-6">
-                {error}
-              </p>
-              <Button onClick={() => refetch()} className="w-full">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Tentar novamente
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  // Divide mangas em linhas de N colunas
+  const rows = useMemo(() => {
+    const result: Manga[][] = [];
+    for (let i = 0; i < allMangas.length; i += columnCount) {
+      result.push(allMangas.slice(i, i + columnCount));
+    }
+    return result;
+  }, [allMangas, columnCount]);
+
+  // ─── TanStack Virtual: virtualiza linhas do grid ────────
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 3,
+  });
+
+  // Quando o usuário chega perto do final, carrega mais
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const lastVirtualRow = virtualItems[virtualItems.length - 1];
+
+  useEffect(() => {
+    if (!lastVirtualRow) return;
+    if (
+      lastVirtualRow.index >= rows.length - 2 &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      fetchNextPage();
+    }
+  }, [lastVirtualRow, rows.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      {/* Header da Biblioteca */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <h1 className="text-4xl font-bold mb-4">Biblioteca</h1>
-          <p className="text-xl opacity-90">
-            Explore nossa coleção completa de mangás
-          </p>
-        </div>
-      </div>
+    <Section size="2">
+      <Container size="4" px="4">
+        <Flex direction="column" gap="5">
+          <Flex align="center" gap="2">
+            <Library size={24} style={{ color: "var(--accent-9)" }} />
+            <Heading size="6">{t("library.title")}</Heading>
+          </Flex>
 
-      {/* Filtros e Busca */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Filtros e Estatísticas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <LibraryFilters
-              searchTerm={searchTerm}
-              statusFilter={statusFilter}
-              onSearchChange={setSearchTerm}
-              onStatusChange={setStatusFilter}
-              onSearchSubmit={handleSearch}
-            />
+          <LibraryFilters
+            status={status}
+            onStatusChange={setStatus}
+            search={search}
+            onSearchChange={setSearch}
+            totalResults={totalElements}
+          />
 
-            {/* Estatísticas */}
-            <LibraryStats stats={stats} />
-          </CardContent>
-        </Card>
+          {isError && (
+            <Callout.Root color="red" size="2">
+              <Callout.Icon>
+                <AlertCircle size={16} />
+              </Callout.Icon>
+              <Callout.Text>
+                {error?.message || t("general.error")}
+              </Callout.Text>
+            </Callout.Root>
+          )}
 
-        {/* Grid de Mangás */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Card className="w-full max-w-sm mx-4">
-              <CardContent className="p-6 text-center">
-                <div className="flex items-center justify-center mb-3">
-                  <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-                </div>
-                <p className="text-muted-foreground">Carregando...</p>
-              </CardContent>
-            </Card>
-          </div>
-        ) : filteredMangas.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {filteredMangas.map((manga, index) => (
-                <MangaCard 
-                  key={manga.id} 
-                  manga={manga} 
-                  index={index} 
-                />
+          {/* Loading skeleton */}
+          {isLoading && (
+            <Grid
+              columns={{ initial: "2", sm: "3", md: "4", lg: "5" }}
+              gap="4"
+            >
+              {Array.from({ length: 10 }).map((_, i) => (
+                <MangaCardSkeleton key={i} />
               ))}
+            </Grid>
+          )}
+
+          {/* Virtualized grid */}
+          {!isLoading && allMangas.length > 0 && (
+            <div
+              ref={scrollRef}
+              style={{
+                height: "calc(100vh - 280px)",
+                overflow: "auto",
+              }}
+              className="no-scrollbar"
+            >
+              <div
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  width: "100%",
+                  position: "relative",
+                }}
+              >
+                {virtualItems.map((virtualRow) => {
+                  const rowMangas = rows[virtualRow.index];
+                  return (
+                    <div
+                      key={virtualRow.index}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start}px)`,
+                        display: "grid",
+                        gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
+                        gap: GAP,
+                      }}
+                    >
+                      {rowMangas.map((manga) => (
+                        <MangaCard key={manga.id} manga={manga} />
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Loading indicator at bottom */}
+              {isFetchingNextPage && (
+                <Flex justify="center" py="4">
+                  <Spinner size="3" />
+                </Flex>
+              )}
             </div>
+          )}
 
-            {/* Paginação */}
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={goToPage}
-            />
-          </>
-        ) : (
-          <div className="flex items-center justify-center py-12">
-            <Card className="w-full max-w-md mx-4">
-              <CardContent className="p-8 text-center">
-                <div className="flex items-center justify-center mb-4">
-                  <BookOpen className="h-16 w-16 text-muted-foreground" />
-                </div>
-                <CardTitle className="text-xl mb-2">
-                  Nenhum mangá encontrado
-                </CardTitle>
-                <p className="text-muted-foreground">
-                  {searchTerm 
-                    ? `Nenhum mangá encontrado para "${searchTerm}"`
-                    : 'Não há mangás disponíveis no momento.'
-                  }
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
+          {/* Empty state */}
+          {!isLoading && allMangas.length === 0 && (
+            <Flex direction="column" align="center" gap="2" py="9">
+              <Library size={48} style={{ color: "var(--gray-8)" }} />
+              <Text size="3" color="gray">
+                {t("library.empty")}
+              </Text>
+              <Text size="2" color="gray">
+                {t("library.empty_hint")}
+              </Text>
+            </Flex>
+          )}
 
-      <Footer />
-    </div>
+          {hasNextPage && !isFetchingNextPage && !isLoading && allMangas.length > 0 && (
+            <Flex justify="center">
+              <Button variant="soft" onClick={() => fetchNextPage()}>
+                {t("library.load_more")}
+              </Button>
+            </Flex>
+          )}
+        </Flex>
+      </Container>
+    </Section>
   );
 }

@@ -2,14 +2,16 @@ export interface Manga {
   id: string;
   apiId?: string;
   title: {
-    'pt-br': string;
-    'en': string;
+    "pt-br"?: string;
+    en?: string;
+    [key: string]: string | undefined;
   };
   description?: {
-    'pt-br': string;
-    'en': string;
+    "pt-br"?: string;
+    en?: string;
+    [key: string]: string | undefined;
   };
-  status: 'ongoing' | 'completed' | 'hiatus' | 'cancelled';
+  status: MangaStatus;
   year?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -18,30 +20,38 @@ export interface Manga {
   rating?: number;
   ratingCount?: number;
   totalChapters?: number;
-  author?: {
-    id: string;
-    name: string;
-    totalMangas?: number;
-  };
+  author?: Author;
   coverImage?: string;
-  // Campos para compatibilidade com o frontend atual
-  image?: string;
-  chapter?: string;
-  genres?: string[];
+}
+
+export interface Author {
+  id: string;
+  apiId?: string;
+  name: string;
+  biography?: {
+    en?: string;
+    "pt-br"?: string;
+  };
+  totalMangas?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Chapter {
   id: string;
   number: number;
   title?: string;
+  volume?: string;
   pages?: number;
+  language?: string;
   releaseDate?: string;
   isRead?: boolean;
   mangaId: string;
-  imageUrls?: string[]; // URLs das imagens do capítulo
+  imageUrls?: string[];
+  views?: number;
+  comments?: number;
 }
 
-// DTO vindo do backend (ChapterResponseDto)
 export interface BackendChapterResponseDto {
   id: string;
   apiId?: string;
@@ -62,26 +72,29 @@ export interface BackendChapterResponseDto {
   manga?: { id: string };
 }
 
-export interface Category {
-  name: string;
-  count: number;
-  color: string;
-}
-
-export interface MangaCardProps {
-  manga: Manga;
-  variant?: 'featured' | 'popular';
-  index?: number;
-}
-
-export interface CategoryCardProps {
-  category: Category;
-}
-
 export interface PaginatedResponse<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
   size: number;
   number: number;
-} 
+}
+
+export interface PopulationStats {
+  totalMangas: number;
+  totalAuthors: number;
+  totalChapters: number;
+}
+
+export interface PopulationResult {
+  status: string;
+  message: string;
+  totalFound?: number;
+  mangasSaved?: number;
+  authorsSaved?: number;
+  chaptersSaved?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export type MangaStatus = "ongoing" | "completed" | "hiatus" | "cancelled";

@@ -1,39 +1,37 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import "@radix-ui/themes/styles.css";
 import "./globals.css";
-import { QueryProvider } from "@/providers/QueryProvider";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Providers } from "@/providers/Providers";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Reader Hub - Seu Portal de Mangás",
-  description: "Descubra e leia os melhores mangás online. Milhares de títulos disponíveis com atualizações regulares.",
+  title: "Reader Hub - Seu acervo de mangás",
+  description:
+    "Leia seus mangás favoritos online com um leitor moderno e elegante.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider>
-          <QueryProvider>
-            {children}
-          </QueryProvider>
-        </ThemeProvider>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body>
+        <Providers>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              minHeight: "100vh",
+            }}
+          >
+            <Header />
+            <main style={{ flex: 1 }}>{children}</main>
+            <Footer />
+          </div>
+        </Providers>
       </body>
     </html>
   );

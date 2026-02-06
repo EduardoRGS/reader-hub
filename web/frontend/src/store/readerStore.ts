@@ -1,17 +1,10 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type { Locale } from "@/lib/i18n";
 
-type ReadingMode = 'default' | 'webtoon';
-type ThemeMode = 'light' | 'dark';
+type ReadingMode = "default" | "webtoon";
 
 interface ReadingProgress {
-  mangaId: string;
-  chapterId: string;
-  page: number;
-  lastRead: string; // Mudança: usar string ao invés de Date para melhor serialização
-}
-
-interface ReadingHistoryEntry {
   mangaId: string;
   chapterId: string;
   page: number;
@@ -19,115 +12,92 @@ interface ReadingHistoryEntry {
 }
 
 interface ReaderState {
-  readingMode: 'default' | 'webtoon';
-  themeMode: ThemeMode;
-  autoAdvance: boolean;
+  locale: Locale;
+  readingMode: ReadingMode;
   autoNextChapter: boolean;
   showPageNumber: boolean;
-  readingHistory: ReadingHistoryEntry[];
-  isHydrated: boolean;
+  readingHistory: ReadingProgress[];
+
+  setLocale: (locale: Locale) => void;
   setReadingMode: (mode: ReadingMode) => void;
-  setThemeMode: (mode: ThemeMode) => void;
-  setAutoAdvance: (auto: boolean) => void;
-  setAutoNextChapter: (auto: boolean) => void;
-  setShowPageNumber: (show: boolean) => void;
-  addToHistory: (progress: Omit<ReadingProgress, 'lastRead'>) => void;
-  updateReadingProgress: (progress: Omit<ReadingProgress, 'lastRead'>) => void;
-  getLastReadChapter: (mangaId: string) => ReadingProgress | undefined;
+  setAutoNextChapter: (v: boolean) => void;
+  setShowPageNumber: (v: boolean) => void;
+
+  updateReadingProgress: (
+    p: Omit<ReadingProgress, "lastRead">
+  ) => void;
+  getLastReadChapter: (
+    mangaId: string
+  ) => ReadingProgress | undefined;
   clearReadingHistory: () => void;
-  setIsHydrated: (hydrated: boolean) => void;
 }
 
-const getSystemTheme = (): ThemeMode => {
-  if (typeof window !== 'undefined') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  return 'light';
-};
-
-const initialState: Omit<ReaderState, 'setReadingMode' | 'setThemeMode' | 'setAutoAdvance' | 'setAutoNextChapter' | 'setShowPageNumber' | 'addToHistory' | 'updateReadingProgress' | 'getLastReadChapter' | 'clearReadingHistory' | 'setIsHydrated'> = {
-  readingMode: 'default',
-  themeMode: getSystemTheme(),
-  autoAdvance: false,
-  autoNextChapter: false,
-  showPageNumber: true,
-  readingHistory: [],
-  isHydrated: false,
-};
+/**
+ * Detecta o idioma preferido do navegador.
+ * Retorna "pt-br" se o navegador preferir português, senão "en".
+ */
+function detectBrowserLocale(): Locale {
+  if (typeof navigator === "undefined") return "pt-br";
+  const lang = navigator.language?.toLowerCase() ?? "";
+  if (lang.startsWith("pt")) return "pt-br";
+  return "en";
+}
 
 export const useReaderStore = create<ReaderState>()(
   persist(
     (set, get) => ({
-      ...initialState,
-      
-      setIsHydrated: (hydrated: boolean) => set({ isHydrated: hydrated }),
-      
+      locale: detectBrowserLocale(),
+      readingMode: "default",
+      autoNextChapter: true,
+      showPageNumber: true,
+      readingHistory: [],
+
+      setLocale: (locale) => set({ locale }),
       setReadingMode: (mode) => set({ readingMode: mode }),
-      setThemeMode: (mode) => set({ themeMode: mode }),
-      setAutoAdvance: (auto) => set({ autoAdvance: auto }),
-      setAutoNextChapter: (auto) => set({ autoNextChapter: auto }),
-      setShowPageNumber: (show) => set({ showPageNumber: show }),
-      
-      addToHistory: (progress) => {
-        const { mangaId, chapterId, page } = progress;
+      setAutoNextChapter: (v) => set({ autoNextChapter: v }),
+      setShowPageNumber: (v) => set({ showPageNumber: v }),
+
+      updateReadingProgress: ({ mangaId, chapterId, page }) => {
         set((state) => {
-          const filteredHistory = state.readingHistory.filter(
-            (item) => !(item.mangaId === mangaId && item.chapterId === chapterId)
+          const filtered = state.readingHistory.filter(
+            (h) => !(h.mangaId === mangaId && h.chapterId === chapterId)
           );
-          
           return {
             readingHistory: [
-              ...filteredHistory,
-              { mangaId, chapterId, page, lastRead: new Date().toISOString() },
+              ...filtered,
+              {
+                mangaId,
+                chapterId,
+                page,
+                lastRead: new Date().toISOString(),
+              },
             ].slice(-100),
           };
         });
       },
-      
-      updateReadingProgress: (progress) => {
-        const { mangaId, chapterId, page } = progress;
-        set((state) => {
-          const filteredHistory = state.readingHistory.filter(
-            (item) => !(item.mangaId === mangaId && item.chapterId === chapterId)
-          );
-          
-          return {
-            readingHistory: [
-              ...filteredHistory,
-              { mangaId, chapterId, page, lastRead: new Date().toISOString() },
-            ].slice(-100),
-          };
-        });
-      },
-      
+
       getLastReadChapter: (mangaId) => {
-        const { readingHistory } = get();
-        const mangaHistory = readingHistory
-          .filter((item) => item.mangaId === mangaId)
-          .sort((a, b) => new Date(b.lastRead).getTime() - new Date(a.lastRead).getTime());
-        
-        return mangaHistory[0];
+        return get()
+          .readingHistory.filter((h) => h.mangaId === mangaId)
+          .sort(
+            (a, b) =>
+              new Date(b.lastRead).getTime() -
+              new Date(a.lastRead).getTime()
+          )[0];
       },
-      
+
       clearReadingHistory: () => set({ readingHistory: [] }),
     }),
     {
-      name: 'reader-preferences',
+      name: "reader-hub-preferences",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
+        locale: state.locale,
         readingMode: state.readingMode,
-        themeMode: state.themeMode,
-        autoAdvance: state.autoAdvance,
         autoNextChapter: state.autoNextChapter,
         showPageNumber: state.showPageNumber,
         readingHistory: state.readingHistory,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state && (state.readingMode as string) === 'list') {
-          state.readingMode = 'webtoon';
-        }
-        state?.setIsHydrated(true);
-      },
     }
   )
 );
