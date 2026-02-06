@@ -85,6 +85,41 @@ export function useInfiniteMangas(status = "all", limit = 20) {
   });
 }
 
+/**
+ * Hook para paginação clássica da biblioteca.
+ * Busca mangás com suporte a busca por título (server-side) e filtro por status.
+ */
+export function useLibraryMangas(
+  page: number,
+  limit: number,
+  status: string,
+  search: string
+) {
+  const offset = page * limit;
+  const hasSearch = search.trim().length >= 2;
+
+  return useQuery({
+    queryKey: ["library", page, limit, status, search],
+    queryFn: ({ signal }) => {
+      if (hasSearch) {
+        return mangaService.searchMangas(
+          search.trim(),
+          limit,
+          offset,
+          status !== "all" ? status : undefined,
+          signal
+        );
+      }
+      if (status !== "all") {
+        return mangaService.getMangasByStatus(status, limit, offset, signal);
+      }
+      return mangaService.getMangas(limit, offset, signal);
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 // ─── Chapter Queries ─────────────────────────────────────
 
 export function useChaptersByMangaId(mangaId: string) {

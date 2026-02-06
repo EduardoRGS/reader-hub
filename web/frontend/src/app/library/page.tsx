@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  useState,
-  useMemo,
-  useRef,
-  useEffect,
-} from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Section,
   Container,
@@ -13,121 +9,133 @@ import {
   Grid,
   Heading,
   Text,
-  Button,
   Callout,
   Spinner,
+  Box,
 } from "@radix-ui/themes";
 import { Library, AlertCircle } from "lucide-react";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { useInfiniteMangas } from "@/hooks/queries";
+import { useLibraryMangas } from "@/hooks/queries";
 import { MangaCard, MangaCardSkeleton } from "@/components/manga/MangaCard";
 import { LibraryFilters } from "@/components/library/LibraryFilters";
-import { getTitle } from "@/lib/utils";
+import { Pagination } from "@/components/library/Pagination";
 import { useLocale } from "@/hooks/useLocale";
-import type { Manga } from "@/types/manga";
 
 const ITEMS_PER_PAGE = 20;
-const ROW_HEIGHT = 420; // altura estimada de um card + gap
-const GAP = 16;
+const SEARCH_DEBOUNCE_MS = 400;
 
-/**
- * Calcula quantas colunas cabem com base na largura do container.
- * Corresponde ao breakpoint Radix: initial=2, sm=3, md=4, lg=5
- */
-function useColumnCount() {
-  const [cols, setCols] = useState(4);
-
-  useEffect(() => {
-    function update() {
-      const w = window.innerWidth;
-      if (w < 520) setCols(2);
-      else if (w < 768) setCols(3);
-      else if (w < 1024) setCols(4);
-      else setCols(5);
-    }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  return cols;
+// Wrapper com Suspense para useSearchParams (exigido pelo Next.js 15)
+export default function LibraryPage() {
+  return (
+    <Suspense
+      fallback={
+        <Flex justify="center" align="center" py="9">
+          <Spinner size="3" />
+        </Flex>
+      }
+    >
+      <LibraryContent />
+    </Suspense>
+  );
 }
 
-export default function LibraryPage() {
+function LibraryContent() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
+
+  const [page, setPage] = useState(0);
   const [status, setStatus] = useState("all");
-  const [search, setSearch] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { locale, t } = useLocale();
-  const columnCount = useColumnCount();
+  const [searchInput, setSearchInput] = useState(initialQuery);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialQuery);
+  const { t } = useLocale();
+  const topRef = useRef<HTMLDivElement>(null);
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteMangas(status, ITEMS_PER_PAGE);
-
-  const allMangas = useMemo(() => {
-    const flat: Manga[] = data?.pages.flatMap((page) => page.content) ?? [];
-    if (!search.trim()) return flat;
-    const q = search.toLowerCase();
-    return flat.filter((m) => getTitle(m, locale).toLowerCase().includes(q));
-  }, [data, search, locale]);
-
-  const totalElements = data?.pages[0]?.totalElements ?? 0;
-
-  // Divide mangas em linhas de N colunas
-  const rows = useMemo(() => {
-    const result: Manga[][] = [];
-    for (let i = 0; i < allMangas.length; i += columnCount) {
-      result.push(allMangas.slice(i, i + columnCount));
-    }
-    return result;
-  }, [allMangas, columnCount]);
-
-  // ─── TanStack Virtual: virtualiza linhas do grid ────────
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: 3,
-  });
-
-  // Quando o usuário chega perto do final, carrega mais
-  const virtualItems = rowVirtualizer.getVirtualItems();
-  const lastVirtualRow = virtualItems[virtualItems.length - 1];
-
+  // Sincronizar quando o param ?q muda (ex: busca do header)
+  const qParam = searchParams.get("q") ?? "";
   useEffect(() => {
-    if (!lastVirtualRow) return;
-    if (
-      lastVirtualRow.index >= rows.length - 2 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      fetchNextPage();
+    if (qParam) {
+      setSearchInput(qParam);
+      setDebouncedSearch(qParam);
+      setPage(0);
     }
-  }, [lastVirtualRow, rows.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [qParam]);
+
+  // Debounce da busca
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setPage(0);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset de página quando muda status
+  const handleStatusChange = (newStatus: string) => {
+    setStatus(newStatus);
+    setPage(0);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    // Scroll to top da lista
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const { data, isLoading, isError, error, isFetching } = useLibraryMangas(
+    page,
+    ITEMS_PER_PAGE,
+    status,
+    debouncedSearch
+  );
+
+  const mangas = data?.content ?? [];
+  const totalElements = data?.totalElements ?? 0;
+  const totalPages = data?.totalPages ?? 0;
 
   return (
     <Section size="2">
       <Container size="4" px="4">
         <Flex direction="column" gap="5">
-          <Flex align="center" gap="2">
-            <Library size={24} style={{ color: "var(--accent-9)" }} />
-            <Heading size="6">{t("library.title")}</Heading>
-          </Flex>
+          {/* Header */}
+          <div ref={topRef}>
+            <Flex align="center" gap="3">
+              <Box
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  background: "var(--accent-a3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Library size={20} style={{ color: "var(--accent-9)" }} />
+              </Box>
+              <Flex direction="column">
+                <Heading size="6">{t("library.title")}</Heading>
+                {totalElements > 0 && (
+                  <Text size="2" color="gray">
+                    {t("library.results", { count: totalElements })}
+                  </Text>
+                )}
+              </Flex>
 
+              {/* Loading indicator when refetching */}
+              {isFetching && !isLoading && (
+                <Spinner size="2" style={{ marginLeft: "auto" }} />
+              )}
+            </Flex>
+          </div>
+
+          {/* Filters */}
           <LibraryFilters
             status={status}
-            onStatusChange={setStatus}
-            search={search}
-            onSearchChange={setSearch}
-            totalResults={totalElements}
+            onStatusChange={handleStatusChange}
+            search={searchInput}
+            onSearchChange={setSearchInput}
           />
 
+          {/* Error */}
           {isError && (
             <Callout.Root color="red" size="2">
               <Callout.Icon>
@@ -145,65 +153,27 @@ export default function LibraryPage() {
               columns={{ initial: "2", sm: "3", md: "4", lg: "5" }}
               gap="4"
             >
-              {Array.from({ length: 10 }).map((_, i) => (
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                 <MangaCardSkeleton key={i} />
               ))}
             </Grid>
           )}
 
-          {/* Virtualized grid */}
-          {!isLoading && allMangas.length > 0 && (
-            <div
-              ref={scrollRef}
-              style={{
-                height: "calc(100vh - 280px)",
-                overflow: "auto",
-              }}
-              className="no-scrollbar"
+          {/* Manga grid */}
+          {!isLoading && mangas.length > 0 && (
+            <Grid
+              columns={{ initial: "2", sm: "3", md: "4", lg: "5" }}
+              gap="4"
+              className="stagger-children"
             >
-              <div
-                style={{
-                  height: `${rowVirtualizer.getTotalSize()}px`,
-                  width: "100%",
-                  position: "relative",
-                }}
-              >
-                {virtualItems.map((virtualRow) => {
-                  const rowMangas = rows[virtualRow.index];
-                  return (
-                    <div
-                      key={virtualRow.index}
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: `${virtualRow.size}px`,
-                        transform: `translateY(${virtualRow.start}px)`,
-                        display: "grid",
-                        gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-                        gap: GAP,
-                      }}
-                    >
-                      {rowMangas.map((manga) => (
-                        <MangaCard key={manga.id} manga={manga} />
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Loading indicator at bottom */}
-              {isFetchingNextPage && (
-                <Flex justify="center" py="4">
-                  <Spinner size="3" />
-                </Flex>
-              )}
-            </div>
+              {mangas.map((manga) => (
+                <MangaCard key={manga.id} manga={manga} />
+              ))}
+            </Grid>
           )}
 
           {/* Empty state */}
-          {!isLoading && allMangas.length === 0 && (
+          {!isLoading && mangas.length === 0 && (
             <Flex direction="column" align="center" gap="2" py="9">
               <Library size={48} style={{ color: "var(--gray-8)" }} />
               <Text size="3" color="gray">
@@ -215,11 +185,21 @@ export default function LibraryPage() {
             </Flex>
           )}
 
-          {hasNextPage && !isFetchingNextPage && !isLoading && allMangas.length > 0 && (
-            <Flex justify="center">
-              <Button variant="soft" onClick={() => fetchNextPage()}>
-                {t("library.load_more")}
-              </Button>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Flex direction="column" align="center" gap="2">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                siblingCount={2}
+              />
+              <Text size="1" color="gray">
+                {t("library.page_info", {
+                  current: page + 1,
+                  total: totalPages,
+                })}
+              </Text>
             </Flex>
           )}
         </Flex>
