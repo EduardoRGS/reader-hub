@@ -1,6 +1,7 @@
 package com.reader_hub.domain.service;
 
 import com.reader_hub.application.dto.ChapterDto;
+import com.reader_hub.application.exception.ResourceNotFoundException;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Chapter;
 import com.reader_hub.domain.model.Manga;
@@ -25,6 +26,8 @@ public class ChapterService {
     private final ChapterRepository chapterRepository;
     private final ApiService apiService;
     private final MangaService mangaService;
+
+    private static final long API_RATE_LIMIT_MS = 1000;
     
     /**
      * Salva um novo capítulo no banco de dados
@@ -35,7 +38,7 @@ public class ChapterService {
         // Validar se o manga existe
         if (chapter.getManga() != null && chapter.getManga().getId() != null) {
             if (!mangaService.existsById(chapter.getManga().getId())) {
-                throw new IllegalArgumentException("Manga não encontrado com ID: " + chapter.getManga().getId());
+                throw new ResourceNotFoundException("Manga", "ID", chapter.getManga().getId());
             }
         }
         
@@ -45,7 +48,7 @@ public class ChapterService {
     }
     
     /**
-     * Cria um novo capítulo
+     * Cria um novo capítulo a partir de dados da API
      */
     public Chapter createChapter(ChapterDto dto, Manga manga) {
         // Verificar se o capítulo já existe
@@ -160,7 +163,7 @@ public class ChapterService {
         log.info("Deletando capítulo: {}", id);
         
         if (!chapterRepository.existsById(id)) {
-            throw new IllegalArgumentException("Capítulo não encontrado com ID: " + id);
+            throw new ResourceNotFoundException("Capítulo", "ID", id);
         }
         
         chapterRepository.deleteById(id);
@@ -170,26 +173,20 @@ public class ChapterService {
      * Incrementa o número de views de um capítulo
      */
     public Chapter incrementViews(String id) {
-        Optional<Chapter> chapterOpt = findById(id);
-        if (chapterOpt.isPresent()) {
-            Chapter chapter = chapterOpt.get();
-            chapter.setViews(chapter.getViews() + 1);
-            return chapterRepository.save(chapter);
-        }
-        throw new IllegalArgumentException("Capítulo não encontrado com ID: " + id);
+        Chapter chapter = chapterRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Capítulo", "ID", id));
+        chapter.setViews(chapter.getViews() + 1);
+        return chapterRepository.save(chapter);
     }
     
     /**
-     * Busca e salva capítulos de um manga da API
+     * Busca e salva capítulos de um manga da API com rate limiting
      */
     @Transactional
     public List<Chapter> populateChaptersForManga(String mangaId) {
-        Optional<Manga> mangaOpt = mangaService.findById(mangaId);
-        if (mangaOpt.isEmpty()) {
-            throw new IllegalArgumentException("Manga não encontrado com ID: " + mangaId);
-        }
+        Manga manga = mangaService.findById(mangaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Manga", "ID", mangaId));
         
-        Manga manga = mangaOpt.get();
         List<ChapterDto> chaptersDto = apiService.getChaptersByMangaId(manga.getApiId(), 500, 0);
         
         log.info("Encontrados {} capítulos para o manga {}", chaptersDto.size(), manga.getTitle());
@@ -198,17 +195,18 @@ public class ChapterService {
         for (ChapterDto dto : chaptersDto) {
             chapters.add(createChapter(dto, manga));
             try {
-                Thread.sleep(1000); // Aumentado delay para 1000ms para respeitar limites de taxa da API de forma mais segura
+                Thread.sleep(API_RATE_LIMIT_MS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.warn("Thread interrompida durante delay: {}", e.getMessage());
+                log.warn("Thread interrompida durante delay de rate limiting");
+                break;
             }
         }
         return chapters;
     }
 
     /**
-     * Conta total de capítulos - OTIMIZADO para estatísticas
+     * Conta total de capítulos
      */
     @Transactional(readOnly = true)
     public long countAll() {

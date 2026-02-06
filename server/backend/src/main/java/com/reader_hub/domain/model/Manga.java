@@ -2,16 +2,18 @@ package com.reader_hub.domain.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Entity
 @Table(name = "mangas", indexes = {
@@ -19,12 +21,13 @@ import java.util.Map;
     @Index(name = "idx_manga_status", columnList = "status"),
     @Index(name = "idx_manga_year", columnList = "publication_year"),
     @Index(name = "idx_manga_rating", columnList = "rating"),
-    @Index(name = "idx_manga_created_at", columnList = "created_at"),
-    @Index(name = "idx_manga_title_gin", columnList = "title") // GIN index para JSONB
+    @Index(name = "idx_manga_created_at", columnList = "created_at")
 })
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"author", "chapters"})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Manga {
     
@@ -32,15 +35,13 @@ public class Manga {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String apiId;
     
-    // OTIMIZAÇÃO POSTGRESQL: JSONB para títulos multilíngues
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> title;
     
-    // OTIMIZAÇÃO POSTGRESQL: JSONB para descrições multilíngues  
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> description;
@@ -63,7 +64,7 @@ public class Manga {
     @Column(columnDefinition = "integer")
     private Integer follows;
     
-    @Column(columnDefinition = "decimal(3,2)")
+    @Column(columnDefinition = "decimal(4,2)")
     private Double rating;
     
     @Column(name = "rating_count", columnDefinition = "integer")
@@ -110,7 +111,7 @@ public class Manga {
     }
     
     // =====================================
-    // MÉTODOS AUXILIARES PARA POSTGRESQL
+    // MÉTODOS AUXILIARES
     // =====================================
     
     /**
@@ -121,7 +122,6 @@ public class Manga {
             return "Título não disponível";
         }
         
-        // Tenta idioma preferido -> português -> inglês -> primeiro disponível
         return title.getOrDefault(preferredLanguage,
                 title.getOrDefault("pt-br",
                     title.getOrDefault("en",
@@ -148,5 +148,18 @@ public class Manga {
     public boolean hasTitleInLanguage(String language) {
         return title != null && title.containsKey(language) && 
                title.get(language) != null && !title.get(language).trim().isEmpty();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Manga manga = (Manga) o;
+        return id != null && Objects.equals(id, manga.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

@@ -2,12 +2,15 @@ package com.reader_hub.application.adapter;
 
 import com.reader_hub.application.dto.*;
 import com.reader_hub.application.dto.ExternalMangaDto;
+import com.reader_hub.application.exception.ExternalApiException;
 import com.reader_hub.application.ports.ApiService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
@@ -17,7 +20,9 @@ import java.util.Optional;
 import static org.springframework.http.HttpMethod.GET;
 
 @Service
+@Slf4j
 public class ApiServiceImpl implements ApiService {
+
     @Value("${mangadex.api.url:https://api.mangadex.org}")
     private String apiUrl;
 
@@ -37,9 +42,11 @@ public class ApiServiceImpl implements ApiService {
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return Optional.of(response.getBody().getData());
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar manga com ID {}: {}", id, e.getMessage());
+            throw new ExternalApiException("MangaDex", "Falha ao buscar manga: " + e.getMessage(), e);
         } catch (Exception e) {
-            System.err.println("Erro ao buscar manga: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao buscar manga com ID {}: {}", id, e.getMessage(), e);
         }
         return Optional.empty();
     }
@@ -61,9 +68,11 @@ public class ApiServiceImpl implements ApiService {
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return response.getBody().getData();
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar mangas com query '{}': {}", query, e.getMessage());
+            throw new ExternalApiException("MangaDex", "Falha ao buscar mangas: " + e.getMessage(), e);
         } catch (Exception e) {
-            System.err.println("Erro ao buscar mangas: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao buscar mangas com query '{}': {}", query, e.getMessage(), e);
         }
         return List.of();
     }
@@ -88,9 +97,11 @@ public class ApiServiceImpl implements ApiService {
                         response.getBody().getOffset(),
                         response.getBody().getLimit());
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao listar mangas: {}", e.getMessage());
+            throw new ExternalApiException("MangaDex", "Falha ao listar mangas: " + e.getMessage(), e);
         } catch (Exception e) {
-            System.err.println("Erro ao buscar mangas: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao listar mangas: {}", e.getMessage(), e);
         }
         return new PaginatedDto<>(List.of(), 0, offset != null ? offset : 0, limit != null ? limit : 20);
     }
@@ -104,9 +115,10 @@ public class ApiServiceImpl implements ApiService {
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return Optional.of(response.getBody().getData());
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar autor com ID {}: {}", id, e.getMessage());
         } catch (Exception e) {
-            System.err.println("Erro ao buscar autor: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao buscar autor com ID {}: {}", id, e.getMessage(), e);
         }
         return Optional.empty();
     }
@@ -127,9 +139,11 @@ public class ApiServiceImpl implements ApiService {
                         response.getBody().getOffset(),
                         response.getBody().getLimit());
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao listar autores: {}", e.getMessage());
+            throw new ExternalApiException("MangaDex", "Falha ao listar autores: " + e.getMessage(), e);
         } catch (Exception e) {
-            System.err.println("Erro ao buscar autores: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao listar autores: {}", e.getMessage(), e);
         }
         return new PaginatedDto<>(List.of(), 0, offset != null ? offset : 0, limit != null ? limit : 20);
     }
@@ -143,9 +157,10 @@ public class ApiServiceImpl implements ApiService {
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return Optional.of(response.getBody().getData());
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar capítulo com ID {}: {}", id, e.getMessage());
         } catch (Exception e) {
-            System.err.println("Erro ao buscar capítulo: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao buscar capítulo com ID {}: {}", id, e.getMessage(), e);
         }
         return Optional.empty();
     }
@@ -166,9 +181,11 @@ public class ApiServiceImpl implements ApiService {
             if (response.getBody() != null && response.getBody().getData() != null) {
                 return response.getBody().getData();
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar capítulos do manga {}: {}", mangaId, e.getMessage());
+            throw new ExternalApiException("MangaDex", "Falha ao buscar capítulos: " + e.getMessage(), e);
         } catch (Exception e) {
-            System.err.println("Erro ao buscar capítulos do manga: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao buscar capítulos do manga {}: {}", mangaId, e.getMessage(), e);
         }
         return List.of();
     }
@@ -184,23 +201,21 @@ public class ApiServiceImpl implements ApiService {
                 var baseUrl = response.getBody().getBaseUrl();
                 var hash = chapterData.getHash();
                 
-                // Construir URLs completas das imagens
                 List<String> imageUrls = new ArrayList<>();
                 for (String fileName : chapterData.getData()) {
                     imageUrls.add(baseUrl + "/data/" + hash + "/" + fileName);
                 }
                 return imageUrls;
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar páginas do capítulo {}: {}", chapterId, e.getMessage());
         } catch (Exception e) {
-            System.err.println("Erro ao buscar páginas do capítulo: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao buscar páginas do capítulo {}: {}", chapterId, e.getMessage(), e);
         }
         return List.of();
     }
     
-    /**
-     * Busca mangas populares (por seguidores)
-     */
+    @Override
     public PaginatedDto<ExternalMangaDto> getPopularMangas(Integer limit, Integer offset) {
         var url = UriComponentsBuilder.fromUriString(apiUrl + "/manga")
                 .queryParam("limit", limit != null ? limit : 20)
@@ -220,16 +235,16 @@ public class ApiServiceImpl implements ApiService {
                         response.getBody().getOffset(),
                         response.getBody().getLimit());
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar mangas populares: {}", e.getMessage());
+            throw new ExternalApiException("MangaDex", "Falha ao buscar mangas populares: " + e.getMessage(), e);
         } catch (Exception e) {
-            System.err.println("Erro ao buscar mangas populares: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao buscar mangas populares: {}", e.getMessage(), e);
         }
         return new PaginatedDto<>(List.of(), 0, offset != null ? offset : 0, limit != null ? limit : 20);
     }
     
-    /**
-     * Busca mangas recentes
-     */
+    @Override
     public PaginatedDto<ExternalMangaDto> getRecentMangas(Integer limit, Integer offset) {
         var url = UriComponentsBuilder.fromUriString(apiUrl + "/manga")
                 .queryParam("limit", limit != null ? limit : 20)
@@ -249,16 +264,15 @@ public class ApiServiceImpl implements ApiService {
                         response.getBody().getOffset(),
                         response.getBody().getLimit());
             }
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar mangas recentes: {}", e.getMessage());
+            throw new ExternalApiException("MangaDex", "Falha ao buscar mangas recentes: " + e.getMessage(), e);
         } catch (Exception e) {
-            System.err.println("Erro ao buscar mangas recentes: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro inesperado ao buscar mangas recentes: {}", e.getMessage(), e);
         }
         return new PaginatedDto<>(List.of(), 0, offset != null ? offset : 0, limit != null ? limit : 20);
     }
 
-    /**
-     * Busca a URL da capa de um manga
-     */
     @Override
     public String getMangaCoverUrl(String mangaId) {
         var url = UriComponentsBuilder.fromUriString(apiUrl + "/manga/" + mangaId)
@@ -274,21 +288,20 @@ public class ApiServiceImpl implements ApiService {
                 
                 ExternalMangaDto manga = response.getBody().getData();
                 if (manga.getRelationships() != null) {
-                    // Procurar por relacionamento do tipo cover_art
                     for (ExternalMangaDto.SimpleRelationship relationship : manga.getRelationships()) {
                         if ("cover_art".equals(relationship.getType()) && relationship.getAttributes() != null) {
                             String fileName = (String) relationship.getAttributes().get("fileName");
                             if (fileName != null) {
-                                // URL correta da imagem da capa
                                 return "https://uploads.mangadex.org/covers/" + mangaId + "/" + fileName;
                             }
                         }
                     }
                 }
             }
-        }catch (Exception e) {
-            System.err.println("Erro ao buscar capa do mangá: " + e.getMessage());
-            e.printStackTrace();
+        } catch (RestClientException e) {
+            log.error("Erro ao buscar capa do manga {}: {}", mangaId, e.getMessage());
+        } catch (Exception e) {
+            log.error("Erro inesperado ao buscar capa do manga {}: {}", mangaId, e.getMessage(), e);
         }
         return null;
     }

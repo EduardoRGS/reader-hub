@@ -1,13 +1,17 @@
 package com.reader_hub.domain.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
+import java.util.Objects;
 
 @Entity
-@Data
 @Table(name = "relationships")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Relationship {
@@ -17,10 +21,23 @@ public class Relationship {
     private String internalId;
     
     @Column(nullable = false)
-    private String id; // ID do recurso relacionado (manga, author, etc.)
+    private String id;
 
     @Column(nullable = false)
-    private String type; // tipo de relacionamento (manga, author, artist, cover_art, etc.)
+    private String type;
     
-    private String related; // usado em alguns casos especiais
+    private String related;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Relationship that = (Relationship) o;
+        return internalId != null && Objects.equals(internalId, that.internalId);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

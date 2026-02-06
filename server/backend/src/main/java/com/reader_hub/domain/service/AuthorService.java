@@ -1,6 +1,7 @@
 package com.reader_hub.domain.service;
 
 import com.reader_hub.application.dto.AuthorDto;
+import com.reader_hub.application.exception.ResourceNotFoundException;
 import com.reader_hub.domain.model.Author;
 import com.reader_hub.domain.model.Language;
 import com.reader_hub.domain.repository.AuthorRepository;
@@ -27,7 +28,7 @@ public class AuthorService {
     public Author saveAuthor(Author author) {
         log.info("Salvando autor: {}", author.getName());
         
-                if (author.getApiId() != null) {
+        if (author.getApiId() != null) {
             Optional<Author> existing = authorRepository.findByApiId(author.getApiId());
             if (existing.isPresent()) {
                 log.info("Autor já existe com apiId: {}", author.getApiId());
@@ -39,12 +40,12 @@ public class AuthorService {
     }
     
     /**
-     * Cria um novo autor
+     * Cria um novo autor a partir de dados da API externa
      */
     public Author createAuthor(AuthorDto authorDto) {
         log.info("Criando novo autor - Nome: {}", authorDto.getAttributes().getName());
         
-                Optional<Author> existingAuthor = authorRepository.findByApiId(authorDto.getId());
+        Optional<Author> existingAuthor = authorRepository.findByApiId(authorDto.getId());
         if (existingAuthor.isPresent()) {
             log.info("Autor já existe com apiId: {}", authorDto.getId());
             return existingAuthor.get();
@@ -54,7 +55,7 @@ public class AuthorService {
         author.setApiId(authorDto.getId());
         author.setName(authorDto.getAttributes().getName());
         
-                if (authorDto.getAttributes().getBiography() != null) {
+        if (authorDto.getAttributes().getBiography() != null) {
             Language biography = new Language();
             Map<String, String> bioMap = authorDto.getAttributes().getBiography();
             biography.setEn(bioMap.get("en"));
@@ -72,7 +73,7 @@ public class AuthorService {
         log.info("Atualizando autor: {}", author.getId());
         
         if (!authorRepository.existsById(author.getId())) {
-            throw new IllegalArgumentException("Autor não encontrado com ID: " + author.getId());
+            throw new ResourceNotFoundException("Autor", "ID", author.getId());
         }
         
         return authorRepository.save(author);
@@ -130,7 +131,7 @@ public class AuthorService {
         log.info("Deletando autor: {}", id);
         
         if (!authorRepository.existsById(id)) {
-            throw new IllegalArgumentException("Autor não encontrado com ID: " + id);
+            throw new ResourceNotFoundException("Autor", "ID", id);
         }
         
         authorRepository.deleteById(id);
@@ -153,7 +154,7 @@ public class AuthorService {
     }
 
     /**
-     * Conta total de autores - OTIMIZADO para estatísticas
+     * Conta total de autores
      */
     @Transactional(readOnly = true)
     public long countAll() {

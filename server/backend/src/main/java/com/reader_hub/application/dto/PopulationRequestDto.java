@@ -2,6 +2,7 @@ package com.reader_hub.application.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
@@ -30,6 +31,7 @@ public class PopulationRequestDto {
      * Parâmetros para busca por título
      */
     @Data
+    @EqualsAndHashCode(callSuper = true)
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SearchParams extends PaginationParams {
@@ -48,6 +50,7 @@ public class PopulationRequestDto {
      * Parâmetros para população completa
      */
     @Data
+    @EqualsAndHashCode(callSuper = true)
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CompletePopulationParams extends PaginationParams {

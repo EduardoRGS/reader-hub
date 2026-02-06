@@ -150,11 +150,7 @@ public class ChapterController {
             @PathVariable 
             @NotBlank(message = "ID do capítulo é obrigatório")
             String id) {
-        try {
-            Chapter chapter = chapterService.incrementViews(id);
-            return ResponseEntity.ok(ChapterResponseDto.fromEntity(chapter));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        Chapter chapter = chapterService.incrementViews(id);
+        return ResponseEntity.ok(ChapterResponseDto.fromEntity(chapter));
     }
 } 

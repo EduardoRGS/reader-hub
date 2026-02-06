@@ -1,55 +1,54 @@
 package com.reader_hub.application.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Configuração CORS centralizada.
+ * Em produção, as origens permitidas devem ser configuradas via variável de ambiente.
+ */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "TRACE", "CONNECT")
-                .allowedHeaders("*")
-                .exposedHeaders("Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers")
-                .allowCredentials(true)
-                .maxAge(3600);
-    }
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+    private String allowedOrigins;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Permitir todas as origens em desenvolvimento
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        // Origens permitidas (configurável via variável de ambiente)
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        configuration.setAllowedOrigins(origins);
         
-        // Métodos HTTP permitidos
+        // Apenas métodos HTTP necessários
         configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "TRACE", "CONNECT"
+            "GET", "POST", "PUT", "DELETE", "OPTIONS"
         ));
         
         // Headers permitidos
         configuration.setAllowedHeaders(Arrays.asList(
-            "Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With",
-            "Access-Control-Request-Method", "Access-Control-Request-Headers"
+            "Origin", "Content-Type", "Accept", "Authorization",
+            "X-Requested-With", "Access-Control-Request-Method",
+            "Access-Control-Request-Headers"
         ));
         
-        // Headers expostos
+        // Headers expostos na resposta
         configuration.setExposedHeaders(Arrays.asList(
-            "Access-Control-Allow-Origin", "Access-Control-Allow-Methods", 
-            "Access-Control-Allow-Headers", "Access-Control-Max-Age"
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Methods",
+            "Access-Control-Allow-Headers"
         ));
         
-        // Permitir credenciais
+        // Permitir credenciais (cookies, authorization headers)
         configuration.setAllowCredentials(true);
         
         // Cache preflight por 1 hora

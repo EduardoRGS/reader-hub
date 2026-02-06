@@ -6,9 +6,11 @@ import com.reader_hub.application.dto.PaginatedDto;
 import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Chapter;
 import com.reader_hub.domain.model.Manga;
-import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,10 +28,13 @@ public class DataPopulationService {
     private final AuthorService authorService;
     private final ChapterService chapterService;
 
+    private static final int BATCH_SIZE = 50;
+    private static final long API_DELAY_MS = 500;
+
     /**
-     * Resultado da população de dados usando Lombok
+     * Resultado da população de dados
      */
-    @Data
+    @Getter
     @RequiredArgsConstructor
     public static class PopulationResult {
         private final int mangasSaved;
@@ -39,9 +44,9 @@ public class DataPopulationService {
     }
 
     /**
-     * Resultado da população completa usando Lombok
+     * Resultado da população completa
      */
-    @Data
+    @Getter
     @RequiredArgsConstructor
     public static class PopulationCompleteResult {
         private final PopulationResult mangaResult;
@@ -50,7 +55,7 @@ public class DataPopulationService {
     }
 
     /**
-     * Método genérico para popular mangás eliminando duplicação
+     * Método genérico para popular mangás com rate limiting
      */
     public PopulationResult populateMangas(PaginatedDto<ExternalMangaDto> mangaDtoPage, String operationType) {
         log.info("Iniciando {} - {} mangás encontrados", operationType, mangaDtoPage.getTotal());
@@ -60,6 +65,9 @@ public class DataPopulationService {
 
         for (ExternalMangaDto mangaDto : mangaDtoPage.getData()) {
             try {
+                // Rate limiting para respeitar a API externa
+                rateLimitDelay();
+
                 // Primeiro, salvar autores relacionados
                 authorsSavedCount += processRelatedAuthors(mangaDto);
 
@@ -88,6 +96,7 @@ public class DataPopulationService {
             for (ExternalMangaDto.SimpleRelationship relationship : mangaDto.getRelationships()) {
                 if ("author".equals(relationship.getType())) {
                     try {
+                        rateLimitDelay();
                         Optional<AuthorDto> authorDto = apiService.getAuthorById(relationship.getId());
                         if (authorDto.isPresent()) {
                             authorService.createAuthor(authorDto.get());
@@ -125,7 +134,6 @@ public class DataPopulationService {
     public PopulationResult searchAndSaveMangas(String title, Integer limit, Integer offset) {
         List<ExternalMangaDto> searchResults = apiService.searchMangas(title, limit, offset);
         
-        // Converter List para PaginatedDto para reutilizar o método
         PaginatedDto<ExternalMangaDto> paginatedResults = new PaginatedDto<>(
             searchResults, 
             searchResults.size(), 
@@ -169,7 +177,8 @@ public class DataPopulationService {
     }
 
     /**
-     * Operação completa: mangás + capítulos
+     * Operação completa: mangás + capítulos.
+     * Usa batching ao invés de carregar todos os mangás de uma vez.
      */
     @Transactional
     public PopulationCompleteResult populateComplete(Integer mangaLimit, Integer offset, Boolean includeChapters) {
@@ -181,50 +190,76 @@ public class DataPopulationService {
         
         int totalChaptersSaved = 0;
         
-        if (includeChapters) {
-            // Popular capítulos para todos os mangás
-            List<Manga> allMangas = mangaService.findAll(
-                org.springframework.data.domain.Pageable.unpaged()
-            ).getContent();
+        if (Boolean.TRUE.equals(includeChapters)) {
+            // Usar paginação em batches ao invés de carregar tudo em memória
+            int page = 0;
+            Page<Manga> mangaPage;
             
-            for (Manga manga : allMangas) {
-                try {
-                    totalChaptersSaved += populateChaptersForManga(manga.getId());
-                } catch (Exception e) {
-                    log.warn("Erro ao popular capítulos do manga {}: {}", manga.getId(), e.getMessage());
+            do {
+                mangaPage = mangaService.findAll(PageRequest.of(page, BATCH_SIZE));
+                
+                for (Manga manga : mangaPage.getContent()) {
+                    try {
+                        totalChaptersSaved += populateChaptersForManga(manga.getId());
+                    } catch (Exception e) {
+                        log.warn("Erro ao popular capítulos do manga {}: {}", manga.getId(), e.getMessage());
+                    }
                 }
-            }
+                
+                page++;
+            } while (mangaPage.hasNext());
         }
         
         return new PopulationCompleteResult(mangaResult, totalChaptersSaved, includeChapters);
     }
 
     /**
-     * Atualiza as imagens das capas dos mangas existentes
+     * Atualiza as imagens das capas dos mangas existentes.
+     * Usa batching para evitar carregar todos os registros em memória.
      */
     @Transactional
     public void updateCoverImages() {
         log.info("Iniciando atualização das imagens das capas...");
         
-        List<Manga> mangas = mangaService.findAll(org.springframework.data.domain.Pageable.unpaged()).getContent();
         int updatedCount = 0;
+        int page = 0;
+        Page<Manga> mangaPage;
         
-        for (Manga manga : mangas) {
-            try {
-                if (manga.getApiId() != null) {
-                    String coverImageUrl = apiService.getMangaCoverUrl(manga.getApiId());
-                    if (coverImageUrl != null) {
-                        manga.setCoverImage(coverImageUrl);
-                        mangaService.save(manga);
-                        updatedCount++;
-                        log.info("Imagem da capa atualizada para manga: {}", manga.getApiId());
+        do {
+            mangaPage = mangaService.findAll(PageRequest.of(page, BATCH_SIZE));
+            
+            for (Manga manga : mangaPage.getContent()) {
+                try {
+                    if (manga.getApiId() != null && !manga.getApiId().startsWith("manual-")) {
+                        rateLimitDelay();
+                        String coverImageUrl = apiService.getMangaCoverUrl(manga.getApiId());
+                        if (coverImageUrl != null) {
+                            manga.setCoverImage(coverImageUrl);
+                            mangaService.save(manga);
+                            updatedCount++;
+                            log.debug("Imagem da capa atualizada para manga: {}", manga.getApiId());
+                        }
                     }
+                } catch (Exception e) {
+                    log.error("Erro ao atualizar imagem da capa para manga {}: {}", manga.getApiId(), e.getMessage());
                 }
-            } catch (Exception e) {
-                log.error("Erro ao atualizar imagem da capa para manga {}: {}", manga.getApiId(), e.getMessage());
             }
-        }
+            
+            page++;
+        } while (mangaPage.hasNext());
         
         log.info("Atualização concluída. {} mangas atualizados.", updatedCount);
+    }
+
+    /**
+     * Rate limiting simples para respeitar limites da API externa.
+     */
+    private void rateLimitDelay() {
+        try {
+            Thread.sleep(API_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Thread interrompida durante rate limit delay");
+        }
     }
 }
