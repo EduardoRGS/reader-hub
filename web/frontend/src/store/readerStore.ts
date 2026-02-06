@@ -11,12 +11,23 @@ interface ReadingProgress {
   lastRead: string;
 }
 
+export interface SliderManga {
+  id: string;
+  title: Record<string, string | undefined>;
+  description?: Record<string, string | undefined>;
+  coverImage?: string;
+  author?: string;
+  rating?: number;
+  status?: string;
+}
+
 interface ReaderState {
   locale: Locale;
   readingMode: ReadingMode;
   autoNextChapter: boolean;
   showPageNumber: boolean;
   readingHistory: ReadingProgress[];
+  sliderMangas: SliderManga[];
 
   setLocale: (locale: Locale) => void;
   setReadingMode: (mode: ReadingMode) => void;
@@ -30,6 +41,10 @@ interface ReaderState {
     mangaId: string
   ) => ReadingProgress | undefined;
   clearReadingHistory: () => void;
+
+  addSliderManga: (manga: SliderManga) => void;
+  removeSliderManga: (id: string) => void;
+  reorderSliderMangas: (mangas: SliderManga[]) => void;
 }
 
 /**
@@ -51,6 +66,7 @@ export const useReaderStore = create<ReaderState>()(
       autoNextChapter: true,
       showPageNumber: true,
       readingHistory: [],
+      sliderMangas: [],
 
       setLocale: (locale) => set({ locale }),
       setReadingMode: (mode) => set({ readingMode: mode }),
@@ -87,6 +103,19 @@ export const useReaderStore = create<ReaderState>()(
       },
 
       clearReadingHistory: () => set({ readingHistory: [] }),
+
+      addSliderManga: (manga) =>
+        set((state) => {
+          if (state.sliderMangas.some((m) => m.id === manga.id)) return state;
+          return { sliderMangas: [...state.sliderMangas, manga] };
+        }),
+
+      removeSliderManga: (id) =>
+        set((state) => ({
+          sliderMangas: state.sliderMangas.filter((m) => m.id !== id),
+        })),
+
+      reorderSliderMangas: (mangas) => set({ sliderMangas: mangas }),
     }),
     {
       name: "reader-hub-preferences",
@@ -97,6 +126,7 @@ export const useReaderStore = create<ReaderState>()(
         autoNextChapter: state.autoNextChapter,
         showPageNumber: state.showPageNumber,
         readingHistory: state.readingHistory,
+        sliderMangas: state.sliderMangas,
       }),
     }
   )
