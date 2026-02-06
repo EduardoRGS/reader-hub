@@ -28,6 +28,14 @@ const translations: Record<Locale, Record<string, string>> = {
     "nav.home": "Início",
     "nav.library": "Biblioteca",
     "nav.admin": "Admin",
+    "nav.search_placeholder": "Buscar mangás...",
+    "nav.search_all": "Ver todos os resultados para \"{query}\"",
+    "nav.search_no_results": "Nenhum resultado encontrado.",
+
+    // ─── Slider ──────────────────────────────────────────
+    "slider.read_now": "Ler Agora",
+    "slider.prev": "Slide anterior",
+    "slider.next": "Próximo slide",
 
     // ─── Tema ───────────────────────────────────────────
     "theme.light": "Tema claro",
@@ -45,6 +53,8 @@ const translations: Record<Locale, Record<string, string>> = {
     // ─── Hero ───────────────────────────────────────────
     "hero.explore": "Explorar Biblioteca",
     "hero.admin": "Painel Admin",
+    "hero.feature_catalog": "Catálogo Completo",
+    "hero.feature_reader": "Leitor Integrado",
 
     // ─── Home: Seções ───────────────────────────────────
     "featured.title": "Destaques",
@@ -69,6 +79,13 @@ const translations: Record<Locale, Record<string, string>> = {
     "library.empty_hint":
       "Tente ajustar os filtros ou popule o banco via o painel Admin.",
     "library.load_more": "Carregar mais",
+    "library.page_info": "Página {current} de {total}",
+
+    // ─── Pagination ────────────────────────────────────────
+    "pagination.first": "Primeira página",
+    "pagination.prev": "Página anterior",
+    "pagination.next": "Próxima página",
+    "pagination.last": "Última página",
 
     // ─── Detalhe do Mangá ───────────────────────────────
     "manga.back": "Voltar à Biblioteca",
@@ -177,6 +194,18 @@ const translations: Record<Locale, Record<string, string>> = {
     "admin.search_no_chapters": "? cap.",
     "admin.search_original": "Original",
     "admin.search_languages": "Idiomas",
+
+    // ─── Slider Manager ─────────────────────────────────
+    "admin.slider_title": "Slider da Home",
+    "admin.slider_desc":
+      "Selecione os mangás que vão aparecer no slider da página inicial.",
+    "admin.slider_current": "Mangás no slider",
+    "admin.slider_empty":
+      "Nenhum mangá no slider. Busque e adicione abaixo.",
+    "admin.slider_add": "Adicionar mangá ao slider",
+    "admin.slider_search_placeholder": "Buscar mangá para adicionar...",
+    "admin.slider_position": "Posição {pos}",
+    "admin.slider_added": "Adicionado",
   },
 
   // ═══════════════════════════════════════════════════════
@@ -197,6 +226,14 @@ const translations: Record<Locale, Record<string, string>> = {
     "nav.home": "Home",
     "nav.library": "Library",
     "nav.admin": "Admin",
+    "nav.search_placeholder": "Search mangas...",
+    "nav.search_all": "See all results for \"{query}\"",
+    "nav.search_no_results": "No results found.",
+
+    // ─── Slider ──────────────────────────────────────────
+    "slider.read_now": "Read Now",
+    "slider.prev": "Previous slide",
+    "slider.next": "Next slide",
 
     // ─── Theme ──────────────────────────────────────────
     "theme.light": "Light theme",
@@ -214,6 +251,8 @@ const translations: Record<Locale, Record<string, string>> = {
     // ─── Hero ───────────────────────────────────────────
     "hero.explore": "Explore Library",
     "hero.admin": "Admin Panel",
+    "hero.feature_catalog": "Full Catalog",
+    "hero.feature_reader": "Built-in Reader",
 
     // ─── Home: Sections ─────────────────────────────────
     "featured.title": "Featured",
@@ -238,6 +277,13 @@ const translations: Record<Locale, Record<string, string>> = {
     "library.empty_hint":
       "Try adjusting the filters or populate the database from the Admin panel.",
     "library.load_more": "Load more",
+    "library.page_info": "Page {current} of {total}",
+
+    // ─── Pagination ────────────────────────────────────────
+    "pagination.first": "First page",
+    "pagination.prev": "Previous page",
+    "pagination.next": "Next page",
+    "pagination.last": "Last page",
 
     // ─── Manga Detail ───────────────────────────────────
     "manga.back": "Back to Library",
@@ -345,6 +391,18 @@ const translations: Record<Locale, Record<string, string>> = {
     "admin.search_no_chapters": "? ch.",
     "admin.search_original": "Original",
     "admin.search_languages": "Languages",
+
+    // ─── Slider Manager ─────────────────────────────────
+    "admin.slider_title": "Home Slider",
+    "admin.slider_desc":
+      "Select the mangas that will appear on the home page slider.",
+    "admin.slider_current": "Mangas in slider",
+    "admin.slider_empty":
+      "No mangas in slider. Search and add below.",
+    "admin.slider_add": "Add manga to slider",
+    "admin.slider_search_placeholder": "Search manga to add...",
+    "admin.slider_position": "Position {pos}",
+    "admin.slider_added": "Added",
   },
 };
 

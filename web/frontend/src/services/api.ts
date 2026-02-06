@@ -117,6 +117,33 @@ export const mangaService = {
     }
   },
 
+  /**
+   * Busca mangás por título no banco local (server-side search).
+   * Suporta filtro opcional por status.
+   */
+  searchMangas: async (
+    q: string,
+    limit = 20,
+    offset = 0,
+    status?: string,
+    signal?: AbortSignal
+  ): Promise<PaginatedResponse<Manga>> => {
+    try {
+      const params = new URLSearchParams({
+        q,
+        limit: String(limit),
+        offset: String(offset),
+      });
+      if (status && status !== "all") params.set("status", status);
+      const { data } = await api.get(`/api/manga/search?${params}`, {
+        signal,
+      });
+      return data;
+    } catch (e) {
+      return handleApiError(e);
+    }
+  },
+
   getMangasByYear: async (
     year: string,
     limit = 20,
