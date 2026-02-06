@@ -51,6 +51,18 @@ public class MangaService {
         return mangaRepository.findAll(pageable);
     }
 
+    /**
+     * Busca simples por título usando JPQL (funciona em PostgreSQL e H2).
+     * Faz LIKE no campo title serializado como string.
+     */
+    @Transactional(readOnly = true)
+    public Page<Manga> searchByTitleSimple(String query, Pageable pageable) {
+        if (query == null || query.trim().isEmpty()) {
+            return mangaRepository.findAll(pageable);
+        }
+        return mangaRepository.findByTitleContainingH2(query.trim(), pageable);
+    }
+
     @Transactional(readOnly = true)
     public Optional<Manga> findById(String id) {
         log.debug("Buscando manga por ID: {}", id);

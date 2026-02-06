@@ -275,6 +275,63 @@ public class MangaController {
     // ================== ENDPOINTS DE BUSCA E FILTROS ==================
 
     @Operation(
+        summary = "Buscar mangás por título",
+        description = "Pesquisa mangás no banco local por título (multilíngue). " +
+                      "Suporta busca em pt-br, en e outros idiomas."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Resultados da busca"),
+        @ApiResponse(responseCode = "400", description = "Parâmetros inválidos")
+    })
+    @GetMapping("/search")
+    public ResponseEntity<PaginatedResponseDto<MangaResponseDto>> searchMangas(
+            @Parameter(description = "Termo de busca", example = "Naruto")
+            @RequestParam
+            @NotBlank(message = "Termo de busca é obrigatório")
+            String q,
+
+            @Parameter(description = "Status para filtrar (opcional)", example = "ongoing",
+                    schema = @Schema(allowableValues = {"ongoing", "completed", "hiatus", "cancelled"}))
+            @RequestParam(required = false)
+            String status,
+
+            @Parameter(description = "Número máximo de resultados por página", example = "20")
+            @RequestParam(defaultValue = "20")
+            @Min(value = 1, message = "{common.limit.range}")
+            @Max(value = 100, message = "{common.limit.range}")
+            Integer limit,
+
+            @Parameter(description = "Número de itens a pular", example = "0")
+            @RequestParam(defaultValue = "0")
+            @Min(value = 0, message = "{common.offset.positive}")
+            Integer offset) {
+
+        Page<Manga> mangas = mangaService.searchByTitleSimple(
+                q.trim(), PageRequest.of(offset / limit, limit));
+
+        // Se status foi informado, filtrar
+        if (status != null && !status.isBlank()) {
+            List<Manga> filtered = mangas.getContent().stream()
+                    .filter(m -> status.equalsIgnoreCase(m.getStatus()))
+                    .toList();
+            PaginatedResponseDto<MangaResponseDto> response =
+                    PaginatedResponseDto.fromList(
+                            filtered.stream().map(MangaResponseDto::fromEntity).toList(),
+                            filtered.size(),
+                            offset / limit,
+                            limit
+                    );
+            return ResponseEntity.ok(response);
+        }
+
+        PaginatedResponseDto<MangaResponseDto> response = PaginatedResponseDto.fromPage(
+                mangas, MangaResponseDto::fromEntity
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
         summary = "Filtrar mangás por status",
         description = "Obtém mangás filtrados por status (ongoing, completed, hiatus, cancelled)"
     )
