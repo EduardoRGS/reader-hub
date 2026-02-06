@@ -19,10 +19,14 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Optional;
 
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Testes de integração para MangaService usando Testcontainers
+ * Testes de integração para MangaService usando Testcontainers.
+ * Requer Docker em execução. Desativado por padrão na CI sem Docker.
+ * Para rodar localmente: export RUN_INTEGRATION_TESTS=true
  * 
  * Funcionalidades testadas:
  * - CRUD básico
@@ -34,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @ActiveProfiles("test")
 @Transactional
+@EnabledIfEnvironmentVariable(named = "RUN_INTEGRATION_TESTS", matches = "true")
 class MangaServiceIntegrationTest {
 
     @Container
