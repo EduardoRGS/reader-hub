@@ -12,6 +12,7 @@ import {
 } from "@radix-ui/themes";
 import { BookOpen, Library, ArrowRight, Sparkles } from "lucide-react";
 import { useLocale } from "@/hooks/useLocale";
+import { StarField } from "@/components/home/StarField";
 
 export function HeroSection() {
   const { t } = useLocale();
@@ -22,12 +23,12 @@ export function HeroSection() {
       style={{
         position: "relative",
         overflow: "hidden",
-        minHeight: 480,
+        minHeight: 520,
         display: "flex",
         alignItems: "center",
       }}
     >
-      {/* Animated gradient background */}
+      {/* ─── Animated gradient background ─────────────────── */}
       <Box
         className="animate-gradient"
         style={{
@@ -40,51 +41,101 @@ export function HeroSection() {
         }}
       />
 
-      {/* Decorative shapes */}
-      <Box
-        className="animate-float"
+      {/* ─── Morphing color blobs ─────────────────────────── */}
+      <div
+        className="animate-blob"
         style={{
           position: "absolute",
-          top: "10%",
-          right: "8%",
-          width: 200,
-          height: 200,
-          borderRadius: "50%",
+          top: "5%",
+          right: "10%",
+          width: 280,
+          height: 280,
+          borderRadius: "60% 40% 30% 70% / 60% 30% 70% 40%",
           background:
             "radial-gradient(circle, var(--accent-a4) 0%, transparent 70%)",
-          filter: "blur(40px)",
+          filter: "blur(50px)",
           zIndex: 0,
+          opacity: 0.7,
         }}
       />
-      <Box
+      <div
+        className="animate-blob-delay"
         style={{
           position: "absolute",
-          bottom: "15%",
+          bottom: "10%",
           left: "5%",
-          width: 160,
-          height: 160,
-          borderRadius: "50%",
+          width: 220,
+          height: 220,
+          borderRadius: "40% 60% 70% 30% / 50% 60% 30% 60%",
           background:
             "radial-gradient(circle, var(--accent-a3) 0%, transparent 70%)",
-          filter: "blur(30px)",
+          filter: "blur(40px)",
           zIndex: 0,
-          animation: "float 4s ease-in-out infinite reverse",
+          opacity: 0.6,
         }}
       />
-
-      {/* Grid pattern overlay */}
-      <Box
+      <div
+        className="animate-blob-delay-2"
         style={{
           position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "radial-gradient(var(--gray-a3) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
+          top: "40%",
+          left: "50%",
+          width: 180,
+          height: 180,
+          borderRadius: "50% 40% 60% 50% / 40% 50% 60% 50%",
+          background:
+            "radial-gradient(circle, var(--iris-a3) 0%, transparent 70%)",
+          filter: "blur(45px)",
           zIndex: 0,
           opacity: 0.5,
         }}
       />
 
+      {/* ─── ✨ Starfield ─────────────────────────────────── */}
+      <StarField count={55} variant="auto" />
+
+      {/* ─── Animated grid pattern ────────────────────────── */}
+      <Box
+        className="hero-bg-grid animate-fade-in"
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 0,
+          opacity: 0.2,
+        }}
+      />
+
+      {/* ─── Drifting shapes ──────────────────────────────── */}
+      <div
+        className="animate-drift"
+        style={{
+          position: "absolute",
+          top: "20%",
+          right: "25%",
+          width: 40,
+          height: 40,
+          border: "2px solid var(--accent-a4)",
+          borderRadius: "var(--radius-3)",
+          zIndex: 0,
+          opacity: 0.4,
+        }}
+      />
+      <div
+        className="animate-drift-reverse"
+        style={{
+          position: "absolute",
+          bottom: "30%",
+          left: "15%",
+          width: 30,
+          height: 30,
+          border: "2px solid var(--iris-a3)",
+          borderRadius: "50%",
+          zIndex: 0,
+          opacity: 0.3,
+        }}
+      />
+
+      {/* ─── Content ──────────────────────────────────────── */}
       <Container size="3" px="4" style={{ position: "relative", zIndex: 1 }}>
         <Flex direction="column" align="center" gap="6" py="8">
           {/* Icon with glow */}
@@ -155,7 +206,11 @@ export function HeroSection() {
               }}
             >
               <Sparkles size={14} style={{ color: "var(--accent-9)" }} />
-              <Text size="2" weight="medium" style={{ color: "var(--accent-11)" }}>
+              <Text
+                size="2"
+                weight="medium"
+                style={{ color: "var(--accent-11)" }}
+              >
                 {t("hero.feature_catalog")}
               </Text>
             </Flex>
@@ -171,7 +226,11 @@ export function HeroSection() {
               }}
             >
               <BookOpen size={14} style={{ color: "var(--accent-9)" }} />
-              <Text size="2" weight="medium" style={{ color: "var(--accent-11)" }}>
+              <Text
+                size="2"
+                weight="medium"
+                style={{ color: "var(--accent-11)" }}
+              >
                 {t("hero.feature_reader")}
               </Text>
             </Flex>

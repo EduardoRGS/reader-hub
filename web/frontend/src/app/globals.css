@@ -8,6 +8,18 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ─── App Layout ────────────────────────────────────────── */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+}
+
 /* ─── Animations ────────────────────────────────────────── */
 
 @keyframes fadeIn {
@@ -246,6 +258,16 @@ html {
   background: var(--gray-a8);
 }
 
+/* ─── Search dropdown ──────────────────────────────────── */
+
+.search-dropdown-item {
+  transition: background 0.15s ease;
+}
+
+.search-dropdown-item:hover {
+  background: var(--gray-a3);
+}
+
 /* ─── Hero Slider ──────────────────────────────────────── */
 
 .hero-slider {
@@ -358,6 +380,122 @@ html {
   border-color: white;
   width: 28px;
   border-radius: 5px;
+}
+
+/* ─── Hero Background Animations ─────────────────────────── */
+
+.hero-bg-grid {
+  background-image:
+    linear-gradient(var(--gray-a3) 1px, transparent 1px),
+    linear-gradient(90deg, var(--gray-a3) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+}
+
+.hero-particles {
+  background-image: radial-gradient(var(--accent-a4) 1.5px, transparent 1.5px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+}
+
+/* ─── Starfield ──────────────────────────────────────────── */
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  15% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  85% {
+    opacity: 0.3;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes twinkle-bright {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.4);
+    box-shadow: 0 0 0px transparent;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 0 8px 2px currentColor;
+  }
+  90% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes twinkle-cross {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+.starfield {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  animation: twinkle var(--star-duration, 3s) var(--star-delay, 0s) ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.star--bright {
+  animation-name: twinkle-bright;
+}
+
+/* Cruz brilhante para estrelas especiais */
+.star--cross {
+  border-radius: 0;
+  animation-name: twinkle-cross;
+}
+
+.star--cross::before,
+.star--cross::after {
+  content: "";
+  position: absolute;
+  background: inherit;
+  border-radius: 1px;
+}
+
+.star--cross::before {
+  width: 100%;
+  height: 30%;
+  top: 35%;
+  left: 0;
+}
+
+.star--cross::after {
+  width: 30%;
+  height: 100%;
+  top: 0;
+  left: 35%;
 }
 
 /* ─── Manga / Reader ────────────────────────────────────── */

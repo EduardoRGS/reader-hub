@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThemeProvider } from "next-themes";
 import { Theme } from "@radix-ui/themes";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AuthProvider } from "@/providers/AuthProvider";
+import { useReaderStore } from "@/store/readerStore";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -37,6 +38,13 @@ function makeQueryClient() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(makeQueryClient);
+
+  // Reidrata o store do localStorage APÓS a montagem no cliente.
+  // Isso garante que a primeira renderização (hidratação) use o mesmo
+  // locale padrão do servidor, evitando hydration mismatch.
+  useEffect(() => {
+    useReaderStore.persist.rehydrate();
+  }, []);
 
   return (
     <ThemeProvider

@@ -49,6 +49,7 @@ const translations: Record<Locale, Record<string, string>> = {
     // ─── Footer ─────────────────────────────────────────
     "footer.disclaimer":
       "Reader Hub © {year} — Projeto de estudo. Dados fornecidos pela API do MangaDex.",
+    "footer.made_with": "Feito com",
 
     // ─── Hero ───────────────────────────────────────────
     "hero.explore": "Explorar Biblioteca",
@@ -177,6 +178,7 @@ const translations: Record<Locale, Record<string, string>> = {
       "Atualizar imagens de capa de todos os mangás salvos.",
     "admin.covers_btn": "Atualizar Capas",
     "admin.processing": "Processando...",
+    "admin.progress_complete": "Operação concluída com sucesso!",
     "admin.search_title": "Buscar e Importar",
     "admin.search_desc":
       "Digite o nome do mangá e os resultados aparecem automaticamente.",
@@ -280,6 +282,7 @@ const translations: Record<Locale, Record<string, string>> = {
     // ─── Footer ─────────────────────────────────────────
     "footer.disclaimer":
       "Reader Hub © {year} — Study project. Data provided by the MangaDex API.",
+    "footer.made_with": "Made with",
 
     // ─── Hero ───────────────────────────────────────────
     "hero.explore": "Explore Library",
@@ -407,6 +410,7 @@ const translations: Record<Locale, Record<string, string>> = {
       "Update cover images for all saved mangas.",
     "admin.covers_btn": "Update Covers",
     "admin.processing": "Processing...",
+    "admin.progress_complete": "Operation completed successfully!",
     "admin.search_title": "Search & Import",
     "admin.search_desc":
       "Type a manga name and results will appear automatically.",

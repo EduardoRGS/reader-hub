@@ -10,9 +10,11 @@ import {
 import { BookOpen, Heart } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/hooks/useLocale";
+import { useAuthStore } from "@/store/authStore";
 
 export function Footer() {
   const { t } = useLocale();
+  const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
 
   return (
     <footer
@@ -65,38 +67,37 @@ export function Footer() {
               </Text>
             </Flex>
 
-            {/* Navigation links */}
+            {/* Navigation links - Admin condicional */}
             <Flex gap="5" align="center">
-              <Link href="/" passHref legacyBehavior>
+              <RadixLink
+                asChild
+                size="2"
+                color="gray"
+                highContrast
+                style={{ transition: "color 0.2s" }}
+              >
+                <Link href="/">{t("nav.home")}</Link>
+              </RadixLink>
+              <RadixLink
+                asChild
+                size="2"
+                color="gray"
+                highContrast
+                style={{ transition: "color 0.2s" }}
+              >
+                <Link href="/library">{t("nav.library")}</Link>
+              </RadixLink>
+              {isAdmin && (
                 <RadixLink
+                  asChild
                   size="2"
                   color="gray"
                   highContrast
                   style={{ transition: "color 0.2s" }}
                 >
-                  {t("nav.home")}
+                  <Link href="/admin">{t("nav.admin")}</Link>
                 </RadixLink>
-              </Link>
-              <Link href="/library" passHref legacyBehavior>
-                <RadixLink
-                  size="2"
-                  color="gray"
-                  highContrast
-                  style={{ transition: "color 0.2s" }}
-                >
-                  {t("nav.library")}
-                </RadixLink>
-              </Link>
-              <Link href="/admin" passHref legacyBehavior>
-                <RadixLink
-                  size="2"
-                  color="gray"
-                  highContrast
-                  style={{ transition: "color 0.2s" }}
-                >
-                  {t("nav.admin")}
-                </RadixLink>
-              </Link>
+              )}
             </Flex>
           </Flex>
 
@@ -121,7 +122,7 @@ export function Footer() {
             </Text>
             <Flex align="center" gap="1">
               <Text size="1" color="gray">
-                Made with
+                {t("footer.made_with")}
               </Text>
               <Heart
                 size={12}

@@ -20,15 +20,9 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <body>
         <Providers>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              minHeight: "100vh",
-            }}
-          >
+          <div className="app-layout">
             <Header />
-            <main style={{ flex: 1 }}>{children}</main>
+            <main className="app-main">{children}</main>
             <Footer />
           </div>
         </Providers>

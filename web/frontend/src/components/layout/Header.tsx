@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Flex,
@@ -24,11 +23,12 @@ import {
   ArrowRight,
   LogIn,
   LogOut,
-  User,
   Shield,
 } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { MiniCover } from "@/components/shared/MiniCover";
 import { useLocale } from "@/hooks/useLocale";
 import { mangaService, authService } from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
@@ -42,11 +42,17 @@ export function Header() {
   const router = useRouter();
   const { locale, t } = useLocale();
 
-  const user = useAuthStore((s) => s.user);
-  const isAuthenticated = useAuthStore((s) => s.user !== null && s.accessToken !== null);
-  const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
-  const clearAuth = useAuthStore((s) => s.clearAuth);
-  const isLoading = useAuthStore((s) => s.isLoading);
+  // Zustand com useShallow para evitar re-renders desnecessários
+  const { user, isAuthenticated, isAdmin, clearAuth, isLoading } =
+    useAuthStore(
+      useShallow((s) => ({
+        user: s.user,
+        isAuthenticated: s.user !== null && s.accessToken !== null,
+        isAdmin: s.user?.role === "ADMIN",
+        clearAuth: s.clearAuth,
+        isLoading: s.isLoading,
+      }))
+    );
 
   // Links de navegação - Admin só aparece para admins
   const navKeys = [
@@ -317,51 +323,16 @@ export function Header() {
                         <Box
                           key={manga.id}
                           onClick={() => navigateToManga(manga.id)}
+                          className="search-dropdown-item"
                           style={{
                             padding: "8px 12px",
                             cursor: "pointer",
                             borderRadius: "var(--radius-2)",
-                            transition: "background 0.15s",
                           }}
-                          className="hover:bg-[var(--gray-a3)]"
                         >
                           <Flex align="center" gap="3">
-                            {/* Mini cover */}
-                            <Box
-                              style={{
-                                width: 36,
-                                height: 52,
-                                borderRadius: "var(--radius-2)",
-                                overflow: "hidden",
-                                flexShrink: 0,
-                                background: "var(--gray-a3)",
-                                position: "relative",
-                              }}
-                            >
-                              {manga.coverImage ? (
-                                <Image
-                                  src={manga.coverImage}
-                                  alt={title}
-                                  fill
-                                  sizes="36px"
-                                  style={{ objectFit: "cover" }}
-                                  unoptimized
-                                />
-                              ) : (
-                                <Flex
-                                  align="center"
-                                  justify="center"
-                                  style={{ height: "100%" }}
-                                >
-                                  <BookOpen
-                                    size={14}
-                                    style={{ color: "var(--gray-7)" }}
-                                  />
-                                </Flex>
-                              )}
-                            </Box>
+                            <MiniCover src={manga.coverImage} alt={title} />
 
-                            {/* Info */}
                             <Flex
                               direction="column"
                               gap="0"
@@ -377,7 +348,10 @@ export function Header() {
 
                             <ArrowRight
                               size={14}
-                              style={{ color: "var(--gray-8)", flexShrink: 0 }}
+                              style={{
+                                color: "var(--gray-8)",
+                                flexShrink: 0,
+                              }}
                             />
                           </Flex>
                         </Box>
@@ -387,18 +361,22 @@ export function Header() {
                     {/* "Ver todos" link */}
                     <Box
                       onClick={handleViewAll}
+                      className="search-dropdown-item"
                       style={{
                         padding: "10px 12px",
                         cursor: "pointer",
                         borderTop: "1px solid var(--gray-a4)",
-                        transition: "background 0.15s",
                       }}
-                      className="hover:bg-[var(--gray-a3)]"
                     >
                       <Flex align="center" justify="center" gap="2">
-                        <Search size={13} style={{ color: "var(--accent-9)" }} />
+                        <Search
+                          size={13}
+                          style={{ color: "var(--accent-9)" }}
+                        />
                         <Text size="2" weight="medium" color="iris">
-                          {t("nav.search_all", { query: searchValue.trim() })}
+                          {t("nav.search_all", {
+                            query: searchValue.trim(),
+                          })}
                         </Text>
                       </Flex>
                     </Box>
@@ -438,10 +416,10 @@ export function Header() {
                 )}
             </div>
           ) : (
+            /* ─── Nav Pills (FIX: sem px conflitante, altura fixa, ícones 16px) ─── */
             <Flex
               align="center"
               gap="1"
-              px="1"
               style={{
                 background: "var(--gray-a3)",
                 borderRadius: "var(--radius-4)",
@@ -460,9 +438,9 @@ export function Header() {
                   >
                     <Flex
                       align="center"
+                      justify="center"
                       gap="2"
                       px="3"
-                      py="1"
                       style={{
                         borderRadius: "var(--radius-3)",
                         background: isActive
@@ -475,9 +453,10 @@ export function Header() {
                         cursor: "pointer",
                         fontSize: "var(--font-size-2)",
                         fontWeight: isActive ? 600 : 400,
+                        height: 32,
                       }}
                     >
-                      <Icon size={15} />
+                      <Icon size={16} />
                       <Box display={{ initial: "none", sm: "block" }}>
                         <Text size="2">{t(labelKey)}</Text>
                       </Box>
@@ -529,32 +508,29 @@ export function Header() {
                 {isAuthenticated ? (
                   <Flex align="center" gap="2">
                     <Box display={{ initial: "none", sm: "block" }}>
-                    <Flex
-                      align="center"
-                      gap="1"
-                    >
-                      {isAdmin && (
-                        <Box
-                          style={{
-                            background: "var(--amber-a3)",
-                            color: "var(--amber-11)",
-                            padding: "2px 6px",
-                            borderRadius: "var(--radius-2)",
-                            fontSize: "var(--font-size-1)",
-                            fontWeight: 600,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 3,
-                          }}
-                        >
-                          <Shield size={10} />
-                          {t("auth.admin_badge")}
-                        </Box>
-                      )}
-                      <Text size="2" color="gray" weight="medium">
-                        {user?.name?.split(" ")[0]}
-                      </Text>
-                    </Flex>
+                      <Flex align="center" gap="1">
+                        {isAdmin && (
+                          <Box
+                            style={{
+                              background: "var(--amber-a3)",
+                              color: "var(--amber-11)",
+                              padding: "2px 6px",
+                              borderRadius: "var(--radius-2)",
+                              fontSize: "var(--font-size-1)",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 3,
+                            }}
+                          >
+                            <Shield size={10} />
+                            {t("auth.admin_badge")}
+                          </Box>
+                        )}
+                        <Text size="2" color="gray" weight="medium">
+                          {user?.name?.split(" ")[0]}
+                        </Text>
+                      </Flex>
                     </Box>
                     <IconButton
                       variant="ghost"
@@ -577,7 +553,6 @@ export function Header() {
                       align="center"
                       gap="2"
                       px="3"
-                      py="1"
                       style={{
                         borderRadius: "var(--radius-3)",
                         background: "var(--accent-a4)",
@@ -586,6 +561,7 @@ export function Header() {
                         fontSize: "var(--font-size-2)",
                         fontWeight: 500,
                         transition: "all 0.2s ease",
+                        height: 32,
                       }}
                     >
                       <LogIn size={14} />

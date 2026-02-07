@@ -15,6 +15,7 @@ import { BookOpen, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useReaderStore, type SliderManga } from "@/store/readerStore";
 import { useLocale } from "@/hooks/useLocale";
 import { formatRating } from "@/lib/utils";
+import { StarField } from "@/components/home/StarField";
 import type { Locale } from "@/lib/i18n";
 
 const AUTO_PLAY_MS = 6000;
@@ -41,7 +42,6 @@ function getSliderDescription(
     manga.description?.[fallback] ||
     Object.values(manga.description || {}).find(Boolean) ||
     "";
-  // Limitar a ~150 caracteres
   if (desc.length > 160) return desc.slice(0, 157) + "...";
   return desc;
 }
@@ -108,6 +108,9 @@ export function HeroSlider() {
 
       {/* Overlay gradients */}
       <Box className="hero-slider__overlay" />
+
+      {/* ✨ Starfield - estrelas piscando sobre o fundo escuro do slider */}
+      <StarField count={45} variant="over-dark" />
 
       {/* Content */}
       <Container

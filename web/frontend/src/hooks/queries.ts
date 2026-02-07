@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   useQuery,
   useInfiniteQuery,
@@ -269,14 +270,17 @@ export function useUpdateCovers() {
 export function usePrefetchChapters(mangaId: string) {
   const qc = useQueryClient();
 
-  if (mangaId) {
-    qc.prefetchQuery({
-      queryKey: queryKeys.chapters(mangaId),
-      queryFn: ({ signal }) =>
-        chapterService.getChaptersByMangaId(mangaId, signal),
-      staleTime: 5 * 60 * 1000,
-    });
-  }
+  // Fix: side effect deve estar dentro de useEffect, não no corpo do hook
+  useEffect(() => {
+    if (mangaId) {
+      qc.prefetchQuery({
+        queryKey: queryKeys.chapters(mangaId),
+        queryFn: ({ signal }) =>
+          chapterService.getChaptersByMangaId(mangaId, signal),
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [qc, mangaId]);
 }
 
 // ─── Invalidation Helpers ────────────────────────────────

@@ -117,29 +117,30 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Trata erros da API com mensagens em inglês (fallback universal).
+ * Os componentes da UI podem traduzir usando o sistema i18n quando necessário.
+ */
 function handleApiError(error: unknown): never {
   if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+    const serverMessage = data?.details || data?.message;
+
     if (error.code === "ECONNABORTED")
-      throw new Error("Tempo limite excedido. Tente novamente.");
+      throw new Error("Request timed out. Please try again.");
     if (error.code === "ERR_NETWORK")
-      throw new Error("Erro de conexão. Verifique sua internet.");
+      throw new Error("Connection error. Check your network.");
     if (error.response?.status === 401)
-      throw new Error(
-        error.response?.data?.details || error.response?.data?.message || "Credenciais inválidas."
-      );
+      throw new Error(serverMessage || "Invalid credentials.");
     if (error.response?.status === 403)
-      throw new Error("Acesso negado. Você não tem permissão.");
+      throw new Error("Access denied. You don't have permission.");
     if (error.response?.status === 404)
-      throw new Error("Recurso não encontrado.");
+      throw new Error("Resource not found.");
     if (error.response?.status === 409)
-      throw new Error(
-        error.response?.data?.details || "Recurso já existe."
-      );
+      throw new Error(serverMessage || "Resource already exists.");
     if (error.response?.status === 500)
-      throw new Error("Erro interno do servidor.");
-    throw new Error(
-      error.response?.data?.details || error.response?.data?.message || "Erro desconhecido na API."
-    );
+      throw new Error("Internal server error.");
+    throw new Error(serverMessage || "Unknown API error.");
   }
   throw error;
 }

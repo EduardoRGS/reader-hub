@@ -48,11 +48,18 @@ interface ReaderState {
 }
 
 /**
- * Detecta o idioma preferido do navegador.
- * Retorna "pt-br" se o navegador preferir português, senão "en".
+ * Locale padrão usado no SSR e na primeira renderização do cliente.
+ * Após a montagem, o Zustand persist reidrata do localStorage,
+ * sobrescrevendo com o valor salvo pelo usuário (se houver).
  */
-function detectBrowserLocale(): Locale {
-  if (typeof navigator === "undefined") return "pt-br";
+const DEFAULT_LOCALE: Locale = "pt-br";
+
+/**
+ * Detecta o idioma preferido do navegador.
+ * Usado apenas quando não há locale salvo no localStorage.
+ */
+export function detectBrowserLocale(): Locale {
+  if (typeof navigator === "undefined") return DEFAULT_LOCALE;
   const lang = navigator.language?.toLowerCase() ?? "";
   if (lang.startsWith("pt")) return "pt-br";
   return "en";
@@ -61,7 +68,7 @@ function detectBrowserLocale(): Locale {
 export const useReaderStore = create<ReaderState>()(
   persist(
     (set, get) => ({
-      locale: detectBrowserLocale(),
+      locale: DEFAULT_LOCALE,
       readingMode: "default",
       autoNextChapter: true,
       showPageNumber: true,
@@ -120,6 +127,11 @@ export const useReaderStore = create<ReaderState>()(
     {
       name: "reader-hub-preferences",
       storage: createJSONStorage(() => localStorage),
+      // Não reidratar automaticamente do localStorage.
+      // Isso evita hydration mismatch: o servidor renderiza com DEFAULT_LOCALE
+      // e o cliente também usa DEFAULT_LOCALE na primeira renderização.
+      // A reidratação é disparada manualmente no Providers após a montagem.
+      skipHydration: true,
       partialize: (state) => ({
         locale: state.locale,
         readingMode: state.readingMode,
