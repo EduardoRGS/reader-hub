@@ -11,6 +11,8 @@ import type {
   PopulationStats,
   PopulationResult,
 } from "@/types/manga";
+import type { AuthResponse, LoginRequest, RegisterRequest } from "@/types/auth";
+import { useAuthStore } from "@/store/authStore";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -19,15 +21,42 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // Enviar cookies (refresh_token) automaticamente
 });
 
-// Retry interceptor para erros de rede
+// ─── Request interceptor: adicionar access token ────────
+api.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().accessToken;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ─── Response interceptor: retry + refresh token ────────
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string | null) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+function processQueue(error: unknown, token: string | null = null) {
+  failedQueue.forEach((p) => {
+    if (error) p.reject(error);
+    else p.resolve(token);
+  });
+  failedQueue = [];
+}
+
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
     const req = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
+      _authRetry?: boolean;
     };
+
+    // Retry para erros de rede
     if (
       (error.code === "ECONNABORTED" || error.code === "ERR_NETWORK") &&
       req &&
@@ -37,6 +66,53 @@ api.interceptors.response.use(
       await new Promise((r) => setTimeout(r, 1000));
       return api.request(req);
     }
+
+    // Refresh token em caso de 401 (exceto endpoints de auth)
+    if (
+      error.response?.status === 401 &&
+      req &&
+      !req._authRetry &&
+      !req.url?.includes("/api/auth/")
+    ) {
+      if (isRefreshing) {
+        // Se já está fazendo refresh, enfileirar
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: (token) => {
+              if (token) req.headers.Authorization = `Bearer ${token}`;
+              resolve(api.request(req));
+            },
+            reject,
+          });
+        });
+      }
+
+      req._authRetry = true;
+      isRefreshing = true;
+
+      try {
+        const { data } = await axios.post<AuthResponse>(
+          `${API_BASE_URL}/api/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+
+        const newToken = data.access_token;
+        useAuthStore.getState().setAuth(data.user, newToken);
+
+        req.headers.Authorization = `Bearer ${newToken}`;
+        processQueue(null, newToken);
+
+        return api.request(req);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        useAuthStore.getState().clearAuth();
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
     return Promise.reject(error);
   }
 );
@@ -47,16 +123,80 @@ function handleApiError(error: unknown): never {
       throw new Error("Tempo limite excedido. Tente novamente.");
     if (error.code === "ERR_NETWORK")
       throw new Error("Erro de conexão. Verifique sua internet.");
+    if (error.response?.status === 401)
+      throw new Error(
+        error.response?.data?.details || error.response?.data?.message || "Credenciais inválidas."
+      );
+    if (error.response?.status === 403)
+      throw new Error("Acesso negado. Você não tem permissão.");
     if (error.response?.status === 404)
       throw new Error("Recurso não encontrado.");
+    if (error.response?.status === 409)
+      throw new Error(
+        error.response?.data?.details || "Recurso já existe."
+      );
     if (error.response?.status === 500)
       throw new Error("Erro interno do servidor.");
     throw new Error(
-      error.response?.data?.message || "Erro desconhecido na API."
+      error.response?.data?.details || error.response?.data?.message || "Erro desconhecido na API."
     );
   }
   throw error;
 }
+
+// ─── Auth Service ────────────────────────────────────────
+
+export const authService = {
+  login: async (credentials: LoginRequest): Promise<AuthResponse> => {
+    try {
+      const { data } = await api.post<AuthResponse>(
+        "/api/auth/login",
+        credentials
+      );
+      return data;
+    } catch (e) {
+      return handleApiError(e);
+    }
+  },
+
+  register: async (userData: RegisterRequest): Promise<AuthResponse> => {
+    try {
+      const { data } = await api.post<AuthResponse>(
+        "/api/auth/register",
+        userData
+      );
+      return data;
+    } catch (e) {
+      return handleApiError(e);
+    }
+  },
+
+  refresh: async (): Promise<AuthResponse> => {
+    try {
+      const { data } = await api.post<AuthResponse>("/api/auth/refresh");
+      return data;
+    } catch (e) {
+      return handleApiError(e);
+    }
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch {
+      // Silently fail - limpar estado local de qualquer forma
+    }
+  },
+
+  getMe: async (signal?: AbortSignal): Promise<AuthResponse["user"]> => {
+    try {
+      const { data } = await api.get("/api/auth/me", { signal });
+      return data;
+    } catch (e) {
+      return handleApiError(e);
+    }
+  },
+};
 
 // ─── Manga Service ───────────────────────────────────────
 

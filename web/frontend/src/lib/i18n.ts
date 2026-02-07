@@ -206,6 +206,39 @@ const translations: Record<Locale, Record<string, string>> = {
     "admin.slider_search_placeholder": "Buscar mangá para adicionar...",
     "admin.slider_position": "Posição {pos}",
     "admin.slider_added": "Adicionado",
+
+    // ─── Autenticação ────────────────────────────────────
+    "auth.login": "Entrar",
+    "auth.register": "Criar Conta",
+    "auth.logout": "Sair",
+    "auth.email": "Email",
+    "auth.password": "Senha",
+    "auth.name": "Nome",
+    "auth.email_placeholder": "seu@email.com",
+    "auth.password_placeholder": "Sua senha",
+    "auth.name_placeholder": "Seu nome",
+    "auth.login_title": "Bem-vindo de volta",
+    "auth.login_subtitle": "Entre na sua conta para continuar",
+    "auth.register_title": "Criar nova conta",
+    "auth.register_subtitle": "Junte-se ao Reader Hub",
+    "auth.no_account": "Não tem uma conta?",
+    "auth.has_account": "Já tem uma conta?",
+    "auth.login_error": "Email ou senha inválidos.",
+    "auth.register_error": "Erro ao criar conta. Tente novamente.",
+    "auth.email_in_use": "Este email já está em uso.",
+    "auth.password_min": "A senha deve ter no mínimo 8 caracteres.",
+    "auth.password_length": "A senha deve ter entre 8 e 32 caracteres.",
+    "auth.confirm_password": "Confirmar Senha",
+    "auth.confirm_password_placeholder": "Digite a senha novamente",
+    "auth.password_mismatch": "As senhas não coincidem.",
+    "auth.name_min": "O nome deve ter no mínimo 2 caracteres.",
+    "auth.welcome": "Olá, {name}",
+    "auth.admin_badge": "Admin",
+    "auth.session_expired": "Sessão expirada. Faça login novamente.",
+    "auth.access_denied": "Acesso Negado",
+    "auth.access_denied_desc": "Você precisa ser administrador para acessar esta página.",
+    "auth.login_required": "Login Necessário",
+    "auth.login_required_desc": "Faça login na sua conta para acessar esta página.",
   },
 
   // ═══════════════════════════════════════════════════════
@@ -403,6 +436,39 @@ const translations: Record<Locale, Record<string, string>> = {
     "admin.slider_search_placeholder": "Search manga to add...",
     "admin.slider_position": "Position {pos}",
     "admin.slider_added": "Added",
+
+    // ─── Authentication ──────────────────────────────────
+    "auth.login": "Sign In",
+    "auth.register": "Sign Up",
+    "auth.logout": "Sign Out",
+    "auth.email": "Email",
+    "auth.password": "Password",
+    "auth.name": "Name",
+    "auth.email_placeholder": "your@email.com",
+    "auth.password_placeholder": "Your password",
+    "auth.name_placeholder": "Your name",
+    "auth.login_title": "Welcome back",
+    "auth.login_subtitle": "Sign in to your account to continue",
+    "auth.register_title": "Create new account",
+    "auth.register_subtitle": "Join Reader Hub",
+    "auth.no_account": "Don't have an account?",
+    "auth.has_account": "Already have an account?",
+    "auth.login_error": "Invalid email or password.",
+    "auth.register_error": "Error creating account. Try again.",
+    "auth.email_in_use": "This email is already in use.",
+    "auth.password_min": "Password must be at least 8 characters.",
+    "auth.password_length": "Password must be between 8 and 32 characters.",
+    "auth.confirm_password": "Confirm Password",
+    "auth.confirm_password_placeholder": "Type your password again",
+    "auth.password_mismatch": "Passwords do not match.",
+    "auth.name_min": "Name must be at least 2 characters.",
+    "auth.welcome": "Hi, {name}",
+    "auth.admin_badge": "Admin",
+    "auth.session_expired": "Session expired. Please log in again.",
+    "auth.access_denied": "Access Denied",
+    "auth.access_denied_desc": "You need to be an administrator to access this page.",
+    "auth.login_required": "Login Required",
+    "auth.login_required_desc": "Please sign in to your account to access this page.",
   },
 };
 
@@ -418,7 +484,7 @@ export function t(
   const str = translations[locale]?.[key] ?? translations["en"]?.[key] ?? key;
   if (!vars) return str;
   return Object.entries(vars).reduce(
-    (acc, [k, v]) => acc.replace(`{${k}}`, String(v)),
+    (acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)),
     str
   );
 }

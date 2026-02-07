@@ -22,19 +22,18 @@ import {
   Search,
   X,
   ArrowRight,
+  LogIn,
+  LogOut,
+  User,
+  Shield,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useLocale } from "@/hooks/useLocale";
-import { mangaService } from "@/services/api";
+import { mangaService, authService } from "@/services/api";
+import { useAuthStore } from "@/store/authStore";
 import { getTitle } from "@/lib/utils";
 import type { Manga } from "@/types/manga";
-
-const NAV_KEYS = [
-  { href: "/", labelKey: "nav.home", icon: Home },
-  { href: "/library", labelKey: "nav.library", icon: Library },
-  { href: "/admin", labelKey: "nav.admin", icon: Settings },
-] as const;
 
 const DEBOUNCE_MS = 300;
 
@@ -42,6 +41,22 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { locale, t } = useLocale();
+
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.user !== null && s.accessToken !== null);
+  const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
+  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const isLoading = useAuthStore((s) => s.isLoading);
+
+  // Links de navegação - Admin só aparece para admins
+  const navKeys = [
+    { href: "/", labelKey: "nav.home", icon: Home },
+    { href: "/library", labelKey: "nav.library", icon: Library },
+    ...(isAdmin
+      ? [{ href: "/admin", labelKey: "nav.admin", icon: Settings }]
+      : []),
+  ];
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [results, setResults] = useState<Manga[]>([]);
@@ -433,7 +448,7 @@ export function Header() {
                 padding: "3px",
               }}
             >
-              {NAV_KEYS.map(({ href, labelKey, icon: Icon }) => {
+              {navKeys.map(({ href, labelKey, icon: Icon }) => {
                 const isActive =
                   href === "/" ? pathname === "/" : pathname.startsWith(href);
                 return (
@@ -498,6 +513,90 @@ export function Header() {
 
             <LanguageSelector />
             <ThemeToggle />
+
+            <Box
+              style={{
+                width: 1,
+                height: 20,
+                background: "var(--gray-a5)",
+                margin: "0 4px",
+              }}
+            />
+
+            {/* Auth: Login/User Menu */}
+            {!isLoading && (
+              <>
+                {isAuthenticated ? (
+                  <Flex align="center" gap="2">
+                    <Box display={{ initial: "none", sm: "block" }}>
+                    <Flex
+                      align="center"
+                      gap="1"
+                    >
+                      {isAdmin && (
+                        <Box
+                          style={{
+                            background: "var(--amber-a3)",
+                            color: "var(--amber-11)",
+                            padding: "2px 6px",
+                            borderRadius: "var(--radius-2)",
+                            fontSize: "var(--font-size-1)",
+                            fontWeight: 600,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 3,
+                          }}
+                        >
+                          <Shield size={10} />
+                          {t("auth.admin_badge")}
+                        </Box>
+                      )}
+                      <Text size="2" color="gray" weight="medium">
+                        {user?.name?.split(" ")[0]}
+                      </Text>
+                    </Flex>
+                    </Box>
+                    <IconButton
+                      variant="ghost"
+                      color="gray"
+                      size="2"
+                      onClick={async () => {
+                        await authService.logout();
+                        clearAuth();
+                        router.push("/");
+                      }}
+                      aria-label={t("auth.logout")}
+                      title={t("auth.logout")}
+                    >
+                      <LogOut size={16} />
+                    </IconButton>
+                  </Flex>
+                ) : (
+                  <Link href="/login" style={{ textDecoration: "none" }}>
+                    <Flex
+                      align="center"
+                      gap="2"
+                      px="3"
+                      py="1"
+                      style={{
+                        borderRadius: "var(--radius-3)",
+                        background: "var(--accent-a4)",
+                        color: "var(--accent-11)",
+                        cursor: "pointer",
+                        fontSize: "var(--font-size-2)",
+                        fontWeight: 500,
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      <LogIn size={14} />
+                      <Box display={{ initial: "none", sm: "block" }}>
+                        <Text size="2">{t("auth.login")}</Text>
+                      </Box>
+                    </Flex>
+                  </Link>
+                )}
+              </>
+            )}
           </Flex>
         </Flex>
       </Container>

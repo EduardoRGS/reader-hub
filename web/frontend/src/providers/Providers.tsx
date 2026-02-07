@@ -8,6 +8,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { AuthProvider } from "@/providers/AuthProvider";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -52,7 +53,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         scaling="100%"
       >
         <QueryClientProvider client={queryClient}>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </Theme>
