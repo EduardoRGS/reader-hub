@@ -631,47 +631,44 @@ function extractTitle(
 
 export const mangadexService = {
   /**
-   * Busca mangás no MangaDex com preview completo (capa, autor, etc.)
+   * Busca mangás no MangaDex via proxy do backend (evita CORS).
+   * O backend chama GET /api/manga/external/search?q=...&limit=...
    */
   search: async (
     query: string,
     limit = 10,
     signal?: AbortSignal
   ): Promise<MangaDexSearchResult[]> => {
-    const params = new URLSearchParams({
-      title: query,
-      limit: String(limit),
-      offset: "0",
-      "includes[]": "cover_art",
-      "order[relevance]": "desc",
-      "contentRating[]": "safe",
-    });
-    // MangaDex needs array params sent individually
-    const url = `${MANGADEX_API}/manga?${params.toString()}&includes[]=author`;
+    try {
+      const { data } = await api.get<MangaDexManga[]>(
+        `/api/manga/external/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+        { signal }
+      );
+      const results: MangaDexManga[] = data ?? [];
 
-    const { data } = await axios.get(url, { signal, timeout: 10000 });
-    const results: MangaDexManga[] = data?.data ?? [];
+      return results.map((m) => {
+        const { title, titleOriginal } = extractTitle(m.attributes);
+        const desc =
+          m.attributes.description?.["pt-br"] ||
+          m.attributes.description?.["en"] ||
+          "";
 
-    return results.map((m) => {
-      const { title, titleOriginal } = extractTitle(m.attributes);
-      const desc =
-        m.attributes.description?.["pt-br"] ||
-        m.attributes.description?.["en"] ||
-        "";
-
-      return {
-        id: m.id,
-        title,
-        titleOriginal,
-        description: desc.length > 200 ? desc.slice(0, 200) + "…" : desc,
-        status: m.attributes.status,
-        year: m.attributes.year ?? undefined,
-        lastChapter: m.attributes.lastChapter ?? undefined,
-        coverUrl: extractCoverUrl(m),
-        originalLanguage: m.attributes.originalLanguage,
-        availableLanguages: m.attributes.availableTranslatedLanguages,
-        raw: m,
-      };
-    });
+        return {
+          id: m.id,
+          title,
+          titleOriginal,
+          description: desc.length > 200 ? desc.slice(0, 200) + "…" : desc,
+          status: m.attributes.status,
+          year: m.attributes.year ?? undefined,
+          lastChapter: m.attributes.lastChapter ?? undefined,
+          coverUrl: extractCoverUrl(m),
+          originalLanguage: m.attributes.originalLanguage,
+          availableLanguages: m.attributes.availableTranslatedLanguages,
+          raw: m,
+        };
+      });
+    } catch (e) {
+      return handleApiError(e);
+    }
   },
 };

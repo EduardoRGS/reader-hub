@@ -83,6 +83,31 @@ public class MangaController {
         return apiService.getMangaById(id);
     }
 
+    @Operation(
+        summary = "Buscar mangás por título na API externa",
+        description = "Proxy de busca na API MangaDex por título. Evita problemas de CORS no frontend."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista de mangás encontrados"),
+        @ApiResponse(responseCode = "400", description = "Parâmetros inválidos"),
+        @ApiResponse(responseCode = "502", description = "Erro de comunicação com API externa")
+    })
+    @Tag(name = "🌐 API Externa")
+    @GetMapping("/external/search")
+    public List<ExternalMangaDto> searchExternalMangas(
+            @Parameter(description = "Termo de busca", example = "Naruto")
+            @RequestParam
+            @NotBlank(message = "Termo de busca é obrigatório")
+            String q,
+
+            @Parameter(description = "Número máximo de resultados", example = "15")
+            @RequestParam(defaultValue = "15")
+            @Min(value = 1, message = "{common.limit.range}")
+            @Max(value = 100, message = "{common.limit.range}")
+            Integer limit) {
+        return apiService.searchMangas(q, limit, 0);
+    }
+
     // ================== ENDPOINTS DO BANCO LOCAL ==================
 
     @Operation(

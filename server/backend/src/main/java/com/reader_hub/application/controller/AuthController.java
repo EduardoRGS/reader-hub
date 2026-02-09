@@ -33,6 +33,9 @@ public class AuthController {
     @Value("${app.jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
+
     // =====================================
     // REGISTRO
     // =====================================
@@ -152,22 +155,25 @@ public class AuthController {
     // =====================================
 
     private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        boolean isProd = "prod".equals(activeProfile);
         Cookie cookie = new Cookie("refresh_token", refreshToken);
         cookie.setHttpOnly(true);
-        cookie.setSecure(false); // Para dev local (HTTP). Em produção, usar true.
+        cookie.setSecure(isProd);  // true em produção (HTTPS obrigatório)
         cookie.setPath("/api/auth");
         cookie.setMaxAge((int) (refreshTokenExpiration / 1000));
-        cookie.setAttribute("SameSite", "Lax");
+        // Cross-domain (Vercel→Render) exige SameSite=None + Secure
+        cookie.setAttribute("SameSite", isProd ? "None" : "Lax");
         response.addCookie(cookie);
     }
 
     private void clearRefreshTokenCookie(HttpServletResponse response) {
+        boolean isProd = "prod".equals(activeProfile);
         Cookie cookie = new Cookie("refresh_token", "");
         cookie.setHttpOnly(true);
-        cookie.setSecure(false);
+        cookie.setSecure(isProd);
         cookie.setPath("/api/auth");
         cookie.setMaxAge(0);
-        cookie.setAttribute("SameSite", "Lax");
+        cookie.setAttribute("SameSite", isProd ? "None" : "Lax");
         response.addCookie(cookie);
     }
 
