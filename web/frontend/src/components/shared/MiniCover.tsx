@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Flex, Box } from "@radix-ui/themes";
 import { BookOpen } from "lucide-react";
+import { proxyCoverUrl } from "@/lib/utils";
 
 interface MiniCoverProps {
   src?: string;
@@ -23,6 +24,7 @@ export function MiniCover({
   height = 52,
   iconSize = 14,
 }: MiniCoverProps) {
+  const coverSrc = proxyCoverUrl(src);
   return (
     <Box
       style={{
@@ -35,9 +37,9 @@ export function MiniCover({
         position: "relative",
       }}
     >
-      {src ? (
+      {coverSrc ? (
         <Image
-          src={src}
+          src={coverSrc}
           alt={alt}
           fill
           sizes={`${width}px`}

@@ -46,6 +46,7 @@ import {
   getDescription,
   formatNumber,
   formatRating,
+  proxyCoverUrl,
 } from "@/lib/utils";
 import { useReaderStore } from "@/store/readerStore";
 import { useLocale } from "@/hooks/useLocale";
@@ -119,7 +120,7 @@ export default function MangaDetailPage({
             style={{
               position: "absolute",
               inset: -20,
-              backgroundImage: `url(${manga.coverImage})`,
+              backgroundImage: `url(${proxyCoverUrl(manga.coverImage)})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               filter: "blur(30px) brightness(0.4)",
@@ -196,7 +197,7 @@ export default function MangaDetailPage({
                 >
                   {manga.coverImage ? (
                     <Image
-                      src={manga.coverImage}
+                      src={proxyCoverUrl(manga.coverImage)!}
                       alt={title}
                       fill
                       sizes="180px"

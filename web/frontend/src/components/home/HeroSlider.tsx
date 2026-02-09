@@ -14,7 +14,7 @@ import {
 import { BookOpen, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useReaderStore, type SliderManga } from "@/store/readerStore";
 import { useLocale } from "@/hooks/useLocale";
-import { formatRating } from "@/lib/utils";
+import { formatRating, proxyCoverUrl } from "@/lib/utils";
 import { StarField } from "@/components/home/StarField";
 import type { Locale } from "@/lib/i18n";
 
@@ -86,7 +86,7 @@ export function HeroSlider() {
       <Box className="hero-slider__bg">
         {manga.coverImage ? (
           <Image
-            src={manga.coverImage}
+            src={proxyCoverUrl(manga.coverImage)!}
             alt=""
             fill
             sizes="100vw"
@@ -132,7 +132,7 @@ export function HeroSlider() {
           >
             {manga.coverImage ? (
               <Image
-                src={manga.coverImage}
+                src={proxyCoverUrl(manga.coverImage)!}
                 alt={title}
                 fill
                 sizes="(max-width: 640px) 180px, 240px"

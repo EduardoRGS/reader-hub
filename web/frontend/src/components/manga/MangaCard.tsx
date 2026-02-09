@@ -7,7 +7,7 @@ import { Card, Flex, Text, Box, Inset } from "@radix-ui/themes";
 import { Star, Eye, BookOpen } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { getTitle, formatNumber, formatRating } from "@/lib/utils";
+import { getTitle, formatNumber, formatRating, proxyCoverUrl } from "@/lib/utils";
 import { useLocale } from "@/hooks/useLocale";
 import { queryKeys } from "@/hooks/queries";
 import { mangaService } from "@/services/api";
@@ -65,7 +65,7 @@ export const MangaCard = memo(function MangaCard({
           >
             {manga.coverImage ? (
               <Image
-                src={manga.coverImage}
+                src={proxyCoverUrl(manga.coverImage)!}
                 alt={title}
                 fill
                 sizes="(max-width: 768px) 50vw, 25vw"
