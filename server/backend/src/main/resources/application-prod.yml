@@ -1,0 +1,43 @@
+# ===================================================
+# Reader Hub - Configuração de Produção
+# Render (backend) + Neon (PostgreSQL) + Upstash (Redis)
+# ===================================================
+
+spring:
+  datasource:
+    # Neon PostgreSQL exige SSL (sslmode=require)
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      idle-timeout: 300000
+      max-lifetime: 600000
+      connection-timeout: 30000
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Upstash Redis exige TLS
+  data:
+    redis:
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
+
+# Logging enxuto em produção
+logging:
+  level:
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    com.reader_hub: INFO
+    org.springframework.cache: INFO
+    org.springframework.data.redis: INFO
+    org.springframework.web: WARN

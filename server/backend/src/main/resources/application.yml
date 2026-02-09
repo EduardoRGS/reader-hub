@@ -38,7 +38,7 @@ mangadx:
     url: https://api.mangadex.org
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 springdoc:
   api-docs:
@@ -120,6 +120,8 @@ spring:
   data:
     redis:
       password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
 app:
   redis:
     enabled: true

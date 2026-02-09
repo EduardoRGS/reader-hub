@@ -1,0 +1,26 @@
+# Arquivos de ambiente
+.env
+.env.*
+
+# Docker Compose (não necessário no build)
+docker-compose.yml
+
+# Scripts locais
+init-scripts/
+scripts/
+
+# Build artifacts
+build/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Docs
+*.md
+
+# Git
+.git
+.gitignore
