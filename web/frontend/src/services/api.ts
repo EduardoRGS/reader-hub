@@ -534,6 +534,9 @@ export const adminService = {
   deleteMangasBatch: async (
     ids: string[]
   ): Promise<{ deleted: number; requested: number }> => {
+    if (!ids || ids.length === 0) {
+      throw new Error("No manga IDs provided for batch deletion.");
+    }
     try {
       const { data } = await api.delete("/api/manga/batch", { data: ids });
       return data;

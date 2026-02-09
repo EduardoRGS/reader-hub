@@ -43,7 +43,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
   // Isso garante que a primeira renderização (hidratação) use o mesmo
   // locale padrão do servidor, evitando hydration mismatch.
   useEffect(() => {
-    useReaderStore.persist.rehydrate();
+    try {
+      useReaderStore.persist.rehydrate();
+    } catch (err) {
+      console.error("Failed to rehydrate reader store:", err);
+      // Se o localStorage estiver corrompido, limpar e seguir com defaults
+      try {
+        localStorage.removeItem("reader-hub-preferences");
+      } catch {
+        // Ignora se localStorage não estiver disponível
+      }
+    }
   }, []);
 
   return (

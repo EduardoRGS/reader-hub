@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Flex,
   Text,
@@ -67,6 +67,11 @@ export function MangaManagerCard() {
   const totalPages = data?.totalPages ?? 0;
   const content = data?.content;
 
+  // Resetar paginação quando o filtro muda
+  useEffect(() => {
+    setPage(0);
+  }, [filter]);
+
   // Filtrar localmente por título
   const filteredMangas = useMemo(() => {
     const mangas = content ?? [];
@@ -76,8 +81,6 @@ export function MangaManagerCard() {
       getMangaTitle(m, "").toLowerCase().includes(q)
     );
   }, [content, filter]);
-
-  const allMangas = content ?? [];
 
   // Handlers de seleção
   const toggleSelect = (id: string) => {
@@ -286,7 +289,7 @@ export function MangaManagerCard() {
         )}
 
         {/* Empty state */}
-        {!isLoading && allMangas.length === 0 && (
+        {!isLoading && totalMangas === 0 && (
           <Flex direction="column" align="center" gap="2" py="6">
             <Database size={32} style={{ color: "var(--gray-8)" }} />
             <Text size="2" color="gray">

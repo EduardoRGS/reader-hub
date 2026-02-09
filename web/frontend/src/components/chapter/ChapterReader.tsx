@@ -16,6 +16,7 @@ import {
   Separator,
   SegmentedControl,
   Badge,
+  Tooltip,
 } from "@radix-ui/themes";
 import {
   ChevronLeft,
@@ -54,15 +55,31 @@ export function ChapterReader({
     showPageNumber,
     setShowPageNumber,
     updateReadingProgress,
+    getLastReadChapter,
   } = useReaderStore();
 
-  const [currentPage, setCurrentPage] = useState(0);
+  // Restaurar progresso salvo ao abrir o capítulo
+  const savedProgress = getLastReadChapter(mangaId);
+  const initialPage =
+    savedProgress?.chapterId === chapter.id ? savedProgress.page : 0;
+
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const webtoonRef = useRef<HTMLDivElement>(null);
 
   const images = chapter.imageUrls ?? [];
   const totalPages = images.length;
+
+  // Resetar estado ao trocar de capítulo
+  useEffect(() => {
+    setImageErrors(new Set());
+    setScrollProgress(0);
+    const progress = getLastReadChapter(mangaId);
+    const page = progress?.chapterId === chapter.id ? progress.page : 0;
+    setCurrentPage(Math.min(page, Math.max(0, (chapter.imageUrls?.length ?? 1) - 1)));
+  }, [chapter.id, mangaId, getLastReadChapter, chapter.imageUrls?.length]);
 
   const sorted = [...chapters].sort((a, b) => a.number - b.number);
   const currentIdx = sorted.findIndex((c) => c.id === chapter.id);
@@ -100,6 +117,16 @@ export function ChapterReader({
     if (prevChapter) router.push(`/manga/${mangaId}/chapter/${prevChapter.id}`);
   }, [prevChapter, mangaId, router]);
 
+  // Toggle de modo de leitura
+  const toggleMode = useCallback(() => {
+    const newMode = readingMode === "default" ? "webtoon" : "default";
+    setReadingMode(newMode);
+    // Ao trocar para webtoon, scroll para o topo
+    if (newMode === "webtoon") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [readingMode, setReadingMode]);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
@@ -112,6 +139,12 @@ export function ChapterReader({
           if (e.ctrlKey || e.metaKey) goPrevChapter();
           else if (readingMode === "default") goPrevPage();
           break;
+        case "ArrowDown":
+          if (readingMode === "default") goNextPage();
+          break;
+        case "ArrowUp":
+          if (readingMode === "default") goPrevPage();
+          break;
         case "Home":
           setCurrentPage(0);
           break;
@@ -121,16 +154,25 @@ export function ChapterReader({
         case "Escape":
           router.push(`/manga/${mangaId}`);
           break;
+        case "m":
+        case "M":
+          toggleMode();
+          break;
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [readingMode, goNextPage, goPrevPage, goNextChapter, goPrevChapter, totalPages, mangaId, router]);
+  }, [readingMode, goNextPage, goPrevPage, goNextChapter, goPrevChapter, totalPages, mangaId, router, toggleMode]);
 
   useEffect(() => {
     if (readingMode !== "webtoon") return;
     function onScroll() {
       setShowScrollTop(window.scrollY > 600);
+      // Calcular progresso de scroll
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight > 0) {
+        setScrollProgress(Math.min(100, Math.round((window.scrollY / docHeight) * 100)));
+      }
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -169,6 +211,19 @@ export function ChapterReader({
       </Flex>
 
       <Flex align="center" gap="2">
+        {/* Mode toggle inline */}
+        <Tooltip content={`${readingMode === "default" ? t("reader.mode_webtoon") : t("reader.mode_page")} (M)`}>
+          <IconButton
+            variant="ghost"
+            size="1"
+            color="gray"
+            onClick={toggleMode}
+            aria-label={t("reader.mode")}
+          >
+            {readingMode === "default" ? <Rows3 size={16} /> : <Columns2 size={16} />}
+          </IconButton>
+        </Tooltip>
+
         <Select.Root
           value={chapter.id}
           onValueChange={(id) => router.push(`/manga/${mangaId}/chapter/${id}`)}
@@ -273,43 +328,90 @@ export function ChapterReader({
   // ─── Webtoon Mode ─────────────────────────────────────
 
   const WebtoonMode = (
-    <Flex ref={webtoonRef} direction="column" align="center" gap="0" py="2" px="2">
-      {totalPages === 0 ? (
-        <Flex direction="column" align="center" gap="2" py="9">
-          <BookOpen size={48} style={{ color: "var(--gray-8)" }} />
-          <Text color="gray">{t("reader.no_pages")}</Text>
-        </Flex>
-      ) : (
-        images.map((url, i) => (
-          <Box key={i} style={{ width: "100%", maxWidth: 800 }}>
-            {imageErrors.has(i) ? (
-              <Flex
-                align="center"
-                justify="center"
-                style={{ height: 200, background: "var(--gray-a3)" }}
-              >
-                <Text size="1" color="gray">
-                  {t("reader.image_error")} {i + 1}
-                </Text>
-              </Flex>
-            ) : (
-              <Image
-                src={url}
-                alt={`${t("reader.mode_page")} ${i + 1}`}
-                width={800}
-                height={1200}
-                style={{ width: "100%", height: "auto", display: "block" }}
-                loading={i < 3 ? "eager" : "lazy"}
-                unoptimized
-                onError={() => handleImageError(i)}
-              />
-            )}
-          </Box>
-        ))
+    <>
+      {/* Barra de progresso fixa no topo */}
+      {totalPages > 0 && (
+        <Box
+          style={{
+            position: "fixed",
+            top: 57 + 41, // header + topbar
+            left: 0,
+            right: 0,
+            height: 3,
+            zIndex: 39,
+            background: "var(--gray-a3)",
+          }}
+        >
+          <Box
+            style={{
+              height: "100%",
+              width: `${scrollProgress}%`,
+              background: "var(--accent-9)",
+              transition: "width 0.1s ease-out",
+            }}
+          />
+        </Box>
       )}
 
+      <Flex ref={webtoonRef} direction="column" align="center" gap="0" py="2" px="2">
+        {totalPages === 0 ? (
+          <Flex direction="column" align="center" gap="2" py="9">
+            <BookOpen size={48} style={{ color: "var(--gray-8)" }} />
+            <Text color="gray">{t("reader.no_pages")}</Text>
+          </Flex>
+        ) : (
+          images.map((url, i) => (
+            <Box key={i} style={{ width: "100%", maxWidth: 800 }}>
+              {imageErrors.has(i) ? (
+                <Flex
+                  align="center"
+                  justify="center"
+                  style={{ height: 200, background: "var(--gray-a3)" }}
+                >
+                  <Text size="1" color="gray">
+                    {t("reader.image_error")} {i + 1}
+                  </Text>
+                </Flex>
+              ) : (
+                <Image
+                  src={url}
+                  alt={`${t("reader.mode_page")} ${i + 1}`}
+                  width={800}
+                  height={1200}
+                  style={{ width: "100%", height: "auto", display: "block" }}
+                  loading={i < 3 ? "eager" : "lazy"}
+                  unoptimized
+                  onError={() => handleImageError(i)}
+                />
+              )}
+            </Box>
+          ))
+        )}
+      </Flex>
+
+      {/* Floating controls */}
       {showScrollTop && (
-        <Box style={{ position: "fixed", bottom: 80, right: 20, zIndex: 30 }}>
+        <Flex
+          direction="column"
+          gap="2"
+          style={{
+            position: "fixed",
+            bottom: 80,
+            right: 20,
+            zIndex: 30,
+            alignItems: "center",
+          }}
+        >
+          <Badge
+            variant="solid"
+            size="1"
+            style={{
+              background: "var(--gray-a10)",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            {scrollProgress}%
+          </Badge>
           <IconButton
             variant="solid"
             size="3"
@@ -317,9 +419,9 @@ export function ChapterReader({
           >
             <ArrowUp size={18} />
           </IconButton>
-        </Box>
+        </Flex>
       )}
-    </Flex>
+    </>
   );
 
   // ─── Bottom Bar ────────────────────────────────────────
@@ -370,7 +472,7 @@ function ReaderSettingsDialog({
   showPageNumber,
   setShowPageNumber,
 }: {
-  readingMode: string;
+  readingMode: "default" | "webtoon";
   setReadingMode: (m: "default" | "webtoon") => void;
   autoNextChapter: boolean;
   setAutoNextChapter: (v: boolean) => void;
@@ -445,6 +547,7 @@ function ReaderSettingsDialog({
               <ShortcutRow keys="← →" desc={t("reader.shortcut_page")} />
               <ShortcutRow keys="Ctrl+← Ctrl+→" desc={t("reader.shortcut_chapter")} />
               <ShortcutRow keys="Home / End" desc={t("reader.shortcut_home_end")} />
+              <ShortcutRow keys="M" desc={t("reader.shortcut_mode")} />
               <ShortcutRow keys="Esc" desc={t("reader.shortcut_back")} />
             </Flex>
           </Flex>
