@@ -209,6 +209,30 @@ const translations: Record<Locale, Record<string, string>> = {
     "admin.slider_position": "Posição {pos}",
     "admin.slider_added": "Adicionado",
 
+    // ─── Gerenciamento de Mangás ───────────────────────────
+    "admin.manage_title": "Gerenciar Mangás",
+    "admin.manage_desc":
+      "Selecione os mangás que deseja remover. A exclusão também remove todos os capítulos associados.",
+    "admin.manage_search_placeholder": "Filtrar mangás...",
+    "admin.manage_delete": "Excluir",
+    "admin.manage_deleting": "Excluindo...",
+    "admin.manage_deleted": "{count} mangá(s) excluído(s) com sucesso!",
+    "admin.manage_delete_error": "Erro ao excluir mangá(s).",
+    "admin.manage_confirm_title": "Confirmar Exclusão",
+    "admin.manage_confirm_desc":
+      "Tem certeza que deseja excluir {count} mangá(s)? Todos os capítulos associados também serão removidos. Esta ação não pode ser desfeita.",
+    "admin.manage_confirm_yes": "Sim, excluir {count}",
+    "admin.manage_confirm_no": "Cancelar",
+    "admin.manage_chapters_count": "{count} cap.",
+    "admin.manage_select_all": "Selecionar todos",
+    "admin.manage_deselect_all": "Limpar seleção",
+    "admin.manage_selected": "{count} selecionado(s)",
+    "admin.manage_delete_selected": "Excluir selecionados",
+    "admin.manage_load_more": "Carregar mais",
+    "admin.manage_total": "{count} mangá(s) no banco",
+    "admin.manage_empty": "Nenhum mangá cadastrado.",
+    "admin.manage_loading": "Carregando mangás...",
+
     // ─── Autenticação ────────────────────────────────────
     "auth.login": "Entrar",
     "auth.register": "Criar Conta",
@@ -440,6 +464,30 @@ const translations: Record<Locale, Record<string, string>> = {
     "admin.slider_search_placeholder": "Search manga to add...",
     "admin.slider_position": "Position {pos}",
     "admin.slider_added": "Added",
+
+    // ─── Manga Management ──────────────────────────────────
+    "admin.manage_title": "Manage Mangas",
+    "admin.manage_desc":
+      "Select the mangas you want to remove. Deleting also removes all associated chapters.",
+    "admin.manage_search_placeholder": "Filter mangas...",
+    "admin.manage_delete": "Delete",
+    "admin.manage_deleting": "Deleting...",
+    "admin.manage_deleted": "{count} manga(s) deleted successfully!",
+    "admin.manage_delete_error": "Failed to delete manga(s).",
+    "admin.manage_confirm_title": "Confirm Deletion",
+    "admin.manage_confirm_desc":
+      "Are you sure you want to delete {count} manga(s)? All associated chapters will also be removed. This action cannot be undone.",
+    "admin.manage_confirm_yes": "Yes, delete {count}",
+    "admin.manage_confirm_no": "Cancel",
+    "admin.manage_chapters_count": "{count} ch.",
+    "admin.manage_select_all": "Select all",
+    "admin.manage_deselect_all": "Clear selection",
+    "admin.manage_selected": "{count} selected",
+    "admin.manage_delete_selected": "Delete selected",
+    "admin.manage_load_more": "Load more",
+    "admin.manage_total": "{count} manga(s) in database",
+    "admin.manage_empty": "No mangas registered.",
+    "admin.manage_loading": "Loading mangas...",
 
     // ─── Authentication ──────────────────────────────────
     "auth.login": "Sign In",

@@ -181,6 +181,31 @@ public class MangaController {
         return ResponseEntity.notFound().build();
     }
 
+    @Operation(
+        summary = "Deletar múltiplos mangás em lote",
+        description = "Remove múltiplos mangás do banco local junto com todos os seus capítulos associados (cascade)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Mangás deletados com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Lista de IDs inválida")
+    })
+    @DeleteMapping("/batch")
+    public ResponseEntity<Map<String, Object>> deleteMangasBatch(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Lista de IDs dos mangás a serem deletados"
+            )
+            @RequestBody List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Lista de IDs não pode ser vazia"));
+        }
+        int deleted = mangaService.deleteByIds(ids);
+        return ResponseEntity.ok(Map.of(
+            "deleted", deleted,
+            "requested", ids.size()
+        ));
+    }
+
     // ================== ENDPOINTS DE CRIAÇÃO ==================
 
     @Operation(
@@ -239,6 +264,28 @@ public class MangaController {
             @Valid @RequestBody CreateMangaDto createMangaDto) {
         Manga manga = mangaService.createMangaManual(createMangaDto);
         return ResponseEntity.ok(MangaResponseDto.fromEntity(manga));
+    }
+
+    // ================== ENDPOINT DE REMOÇÃO ==================
+
+    @Operation(
+        summary = "Deletar manga e seus capítulos",
+        description = "Remove um manga do banco local junto com todos os seus capítulos associados (cascade)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Manga deletado com sucesso"),
+        @ApiResponse(responseCode = "404", description = "Manga não encontrado"),
+        @ApiResponse(responseCode = "400", description = "ID inválido")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteManga(
+            @Parameter(description = "ID único do manga no banco local", 
+                       example = "123e4567-e89b-12d3-a456-426614174000")
+            @PathVariable 
+            @NotBlank(message = "{manga.id.required}")
+            String id) {
+        mangaService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     // ================== ENDPOINTS DE CAPAS ==================

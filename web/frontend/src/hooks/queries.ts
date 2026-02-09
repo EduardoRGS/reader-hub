@@ -250,6 +250,32 @@ export function usePopulateComplete() {
   });
 }
 
+export function useDeleteManga() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (mangaId: string) => adminService.deleteManga(mangaId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.mangas });
+      qc.invalidateQueries({ queryKey: queryKeys.stats() });
+      qc.invalidateQueries({ queryKey: queryKeys.featured() });
+      qc.invalidateQueries({ queryKey: queryKeys.popular() });
+    },
+  });
+}
+
+export function useDeleteMangasBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => adminService.deleteMangasBatch(ids),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.mangas });
+      qc.invalidateQueries({ queryKey: queryKeys.stats() });
+      qc.invalidateQueries({ queryKey: queryKeys.featured() });
+      qc.invalidateQueries({ queryKey: queryKeys.popular() });
+    },
+  });
+}
+
 export function useUpdateCovers() {
   const qc = useQueryClient();
   return useMutation({

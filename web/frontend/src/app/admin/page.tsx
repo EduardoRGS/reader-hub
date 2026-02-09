@@ -27,6 +27,7 @@ import {
 } from "@/components/admin/ActionCard";
 import { SliderManagerCard } from "@/components/admin/SliderManagerCard";
 import { SearchAndSaveCard } from "@/components/admin/SearchAndSaveCard";
+import { MangaManagerCard } from "@/components/admin/MangaManagerCard";
 
 export default function AdminPage() {
   const { t } = useLocale();
@@ -136,6 +137,10 @@ export default function AdminPage() {
           <Separator size="4" />
 
           <SearchAndSaveCard />
+
+          <Separator size="4" />
+
+          <MangaManagerCard />
         </Flex>
       </Container>
     </Section>

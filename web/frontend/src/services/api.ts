@@ -517,6 +517,32 @@ export const adminService = {
   },
 
   /**
+   * Deleta um mangá e todos os capítulos associados via DELETE /api/manga/:id
+   */
+  deleteManga: async (id: string): Promise<void> => {
+    try {
+      await api.delete(`/api/manga/${id}`);
+    } catch (e) {
+      return handleApiError(e);
+    }
+  },
+
+  /**
+   * Deleta múltiplos mangás em lote via DELETE /api/manga/batch
+   * Retorna { deleted: number, requested: number }
+   */
+  deleteMangasBatch: async (
+    ids: string[]
+  ): Promise<{ deleted: number; requested: number }> => {
+    try {
+      const { data } = await api.delete("/api/manga/batch", { data: ids });
+      return data;
+    } catch (e) {
+      return handleApiError(e);
+    }
+  },
+
+  /**
    * Importa um mangá específico via POST /api/manga/from-api
    * enviando o ExternalMangaDto (formato MangaDex) para o backend salvar.
    */

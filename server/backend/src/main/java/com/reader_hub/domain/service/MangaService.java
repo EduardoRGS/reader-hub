@@ -118,6 +118,44 @@ public class MangaService {
         mangaRepository.delete(manga);
     }
 
+    /**
+     * Deleta um manga por ID, junto com todos os capítulos associados (cascade).
+     * Invalida caches relacionados.
+     */
+    @Caching(evict = {
+        @CacheEvict(value = "mangas", key = "#id"),
+        @CacheEvict(value = "mangas", key = "'with-author-' + #id"),
+        @CacheEvict(value = "mangas", key = "'with-chapters-' + #id"),
+        @CacheEvict(value = "manga-lists", allEntries = true),
+        @CacheEvict(value = "statistics", allEntries = true)
+    })
+    public void deleteById(String id) {
+        Manga manga = mangaRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Manga", "ID", id));
+        log.info("Deletando manga '{}' (ID: {}) e seus capítulos", 
+            manga.getTitle(), id);
+        mangaRepository.delete(manga);
+    }
+
+    /**
+     * Deleta múltiplos mangás por IDs em lote, junto com seus capítulos (cascade).
+     * Retorna o número de mangás efetivamente deletados.
+     */
+    @Caching(evict = {
+        @CacheEvict(value = "mangas", allEntries = true),
+        @CacheEvict(value = "manga-lists", allEntries = true),
+        @CacheEvict(value = "statistics", allEntries = true)
+    })
+    public int deleteByIds(List<String> ids) {
+        List<Manga> mangas = mangaRepository.findAllById(ids);
+        if (mangas.isEmpty()) {
+            return 0;
+        }
+        log.info("Deletando {} mangá(s) em lote e seus capítulos", mangas.size());
+        mangaRepository.deleteAll(mangas);
+        return mangas.size();
+    }
+
     @Transactional(readOnly = true)
     public long countAll() {
         return mangaRepository.count();
