@@ -14,7 +14,7 @@ import {
 import { BookOpen, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useReaderStore, type SliderManga } from "@/store/readerStore";
 import { useLocale } from "@/hooks/useLocale";
-import { formatRating, proxyCoverUrl } from "@/lib/utils";
+import { formatRating, proxyCoverUrl, COVER_BLUR_DATA_URL } from "@/lib/utils";
 import { StarField } from "@/components/home/StarField";
 import type { Locale } from "@/lib/i18n";
 
@@ -91,8 +91,9 @@ export function HeroSlider() {
             fill
             sizes="100vw"
             style={{ objectFit: "cover" }}
-            unoptimized
             priority
+            placeholder="blur"
+            blurDataURL={COVER_BLUR_DATA_URL}
           />
         ) : (
           <Box
@@ -137,8 +138,9 @@ export function HeroSlider() {
                 fill
                 sizes="(max-width: 640px) 180px, 240px"
                 style={{ objectFit: "cover", borderRadius: 12 }}
-                unoptimized
                 priority
+                placeholder="blur"
+                blurDataURL={COVER_BLUR_DATA_URL}
               />
             ) : (
               <Flex

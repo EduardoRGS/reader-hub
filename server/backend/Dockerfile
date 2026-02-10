@@ -38,4 +38,5 @@ EXPOSE ${PORT:-8080}
 
 # Limites de memória para free tier (512 MB no Render)
 # -Xmx400m: heap máximo 400 MB | -Xms200m: heap inicial 200 MB
-ENTRYPOINT ["java", "-Xmx400m", "-Xms200m", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+# G1GC: melhor para apps com memória limitada; StringDeduplication economiza heap
+ENTRYPOINT ["java", "-Xmx400m", "-Xms200m", "-XX:+UseG1GC", "-XX:+UseStringDeduplication", "-Dspring.profiles.active=prod", "-jar", "app.jar"]

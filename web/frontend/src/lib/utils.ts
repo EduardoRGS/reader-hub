@@ -69,6 +69,13 @@ export function formatRating(rating?: number): string {
 }
 
 /**
+ * Placeholder blur data URL para imagens de capa.
+ * SVG minúsculo (4×6) que o Next.js amplia com blur, evitando layout shift.
+ */
+export const COVER_BLUR_DATA_URL =
+  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNCIgaGVpZ2h0PSI2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxYzFjMjgiLz48L3N2Zz4=";
+
+/**
  * Converte URLs de capa do MangaDex para o proxy local (/api/cover).
  * Evita a proteção de hotlink do MangaDex (placeholder "You can read this on MangaDex").
  *

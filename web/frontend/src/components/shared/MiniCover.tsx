@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Flex, Box } from "@radix-ui/themes";
 import { BookOpen } from "lucide-react";
-import { proxyCoverUrl } from "@/lib/utils";
+import { proxyCoverUrl, COVER_BLUR_DATA_URL } from "@/lib/utils";
 
 interface MiniCoverProps {
   src?: string;
@@ -44,7 +44,8 @@ export function MiniCover({
           fill
           sizes={`${width}px`}
           style={{ objectFit: "cover" }}
-          unoptimized
+          placeholder="blur"
+          blurDataURL={COVER_BLUR_DATA_URL}
         />
       ) : (
         <Flex align="center" justify="center" style={{ height: "100%" }}>

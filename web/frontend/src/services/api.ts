@@ -52,19 +52,22 @@ api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
     const req = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean;
+      _retryCount?: number;
       _authRetry?: boolean;
     };
 
-    // Retry para erros de rede
+    // Retry com exponential backoff para erros de rede (max 3 tentativas)
     if (
       (error.code === "ECONNABORTED" || error.code === "ERR_NETWORK") &&
-      req &&
-      !req._retry
+      req
     ) {
-      req._retry = true;
-      await new Promise((r) => setTimeout(r, 1000));
-      return api.request(req);
+      const retryCount = req._retryCount ?? 0;
+      if (retryCount < 3) {
+        req._retryCount = retryCount + 1;
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 8000); // 1s, 2s, 4s
+        await new Promise((r) => setTimeout(r, delay));
+        return api.request(req);
+      }
     }
 
     // Refresh token em caso de 401 (exceto endpoints de auth)

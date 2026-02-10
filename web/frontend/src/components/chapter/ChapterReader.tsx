@@ -29,6 +29,7 @@ import {
   Rows3,
   Keyboard,
 } from "lucide-react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useReaderStore } from "@/store/readerStore";
 import { chapterService } from "@/services/api";
 import { useLocale } from "@/hooks/useLocale";
@@ -182,6 +183,15 @@ export function ChapterReader({
     setImageErrors((prev) => new Set(prev).add(index));
   };
 
+  // ─── Virtualização para o modo Webtoon ─────────────────
+  // Apenas monta no DOM as imagens visíveis + overscan, evitando
+  // renderizar 30+ páginas simultâneas em capítulos longos.
+  const rowVirtualizer = useWindowVirtualizer({
+    count: totalPages,
+    estimateSize: () => 1200,
+    overscan: 3,
+  });
+
   // ─── Top Bar ───────────────────────────────────────────
 
   const TopBar = (
@@ -325,7 +335,7 @@ export function ChapterReader({
     </Flex>
   );
 
-  // ─── Webtoon Mode ─────────────────────────────────────
+  // ─── Webtoon Mode (virtualizado) ────────────────────────
 
   const WebtoonMode = (
     <>
@@ -353,39 +363,63 @@ export function ChapterReader({
         </Box>
       )}
 
-      <Flex ref={webtoonRef} direction="column" align="center" gap="0" py="2" px="2">
+      <Flex direction="column" align="center" py="2" px="2">
         {totalPages === 0 ? (
           <Flex direction="column" align="center" gap="2" py="9">
             <BookOpen size={48} style={{ color: "var(--gray-8)" }} />
             <Text color="gray">{t("reader.no_pages")}</Text>
           </Flex>
         ) : (
-          images.map((url, i) => (
-            <Box key={i} style={{ width: "100%", maxWidth: 800 }}>
-              {imageErrors.has(i) ? (
-                <Flex
-                  align="center"
-                  justify="center"
-                  style={{ height: 200, background: "var(--gray-a3)" }}
+          <div
+            ref={webtoonRef}
+            style={{
+              width: "100%",
+              maxWidth: 800,
+              position: "relative",
+              height: `${rowVirtualizer.getTotalSize()}px`,
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const i = virtualRow.index;
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={i}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
                 >
-                  <Text size="1" color="gray">
-                    {t("reader.image_error")} {i + 1}
-                  </Text>
-                </Flex>
-              ) : (
-                <Image
-                  src={url}
-                  alt={`${t("reader.mode_page")} ${i + 1}`}
-                  width={800}
-                  height={1200}
-                  style={{ width: "100%", height: "auto", display: "block" }}
-                  loading={i < 3 ? "eager" : "lazy"}
-                  unoptimized
-                  onError={() => handleImageError(i)}
-                />
-              )}
-            </Box>
-          ))
+                  {imageErrors.has(i) ? (
+                    <Flex
+                      align="center"
+                      justify="center"
+                      style={{ height: 200, background: "var(--gray-a3)" }}
+                    >
+                      <Text size="1" color="gray">
+                        {t("reader.image_error")} {i + 1}
+                      </Text>
+                    </Flex>
+                  ) : (
+                    <Image
+                      src={images[i]}
+                      alt={`${t("reader.mode_page")} ${i + 1}`}
+                      width={800}
+                      height={1200}
+                      style={{ width: "100%", height: "auto", display: "block" }}
+                      loading={i < 3 ? "eager" : "lazy"}
+                      unoptimized
+                      onError={() => handleImageError(i)}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </Flex>
 

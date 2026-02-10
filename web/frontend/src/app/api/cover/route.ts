@@ -31,12 +31,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Timeout de 10s para evitar que a requisição trave indefinidamente
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
     const response = await fetch(url, {
       headers: {
         // Simular request direto (sem referer externo)
         "User-Agent": "Mozilla/5.0 (compatible; ReaderHub/1.0)",
       },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return NextResponse.json(
@@ -56,7 +63,10 @@ export async function GET(request: NextRequest) {
         "CDN-Cache-Control": `public, max-age=${CACHE_MAX_AGE}`,
       },
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return NextResponse.json({ error: "Upstream timeout" }, { status: 504 });
+    }
     return NextResponse.json({ error: "Failed to fetch image" }, { status: 502 });
   }
 }
