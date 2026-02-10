@@ -70,9 +70,56 @@ public class ChapterResponseDto {
         return dto;
     }
     
+    /**
+     * Converte entidade para DTO SEM carregar imagens.
+     * Evita N+1 queries quando listando muitos capítulos,
+     * já que @ElementCollection(images) é lazy-loaded.
+     */
+    public static ChapterResponseDto fromEntityLight(Chapter chapter) {
+        if (chapter == null) {
+            return null;
+        }
+        
+        ChapterResponseDto dto = new ChapterResponseDto();
+        dto.setId(chapter.getId());
+        dto.setApiId(chapter.getApiId());
+        dto.setTitle(chapter.getTitle());
+        dto.setVolume(chapter.getVolume());
+        dto.setChapter(chapter.getChapter());
+        dto.setPages(chapter.getPages());
+        dto.setStatus(chapter.getStatus());
+        dto.setLanguage(chapter.getLanguage());
+        dto.setPublishedAt(chapter.getPublishedAt());
+        dto.setCreatedAt(chapter.getCreatedAt());
+        dto.setUpdatedAt(chapter.getUpdatedAt());
+        dto.setReadableAt(chapter.getReadableAt());
+        dto.setViews(chapter.getViews());
+        dto.setComments(chapter.getComments());
+        // imageUrls intencionalmente NÃO carregadas — usar /with-pages para isso
+        
+        if (chapter.getManga() != null) {
+            dto.setMangaId(chapter.getManga().getId());
+            if (chapter.getManga().getTitle() != null) {
+                String title = chapter.getManga().getTitle().get("pt-br");
+                if (title == null) {
+                    title = chapter.getManga().getTitle().get("en");
+                }
+                dto.setMangaTitle(title);
+            }
+        }
+        
+        return dto;
+    }
+
     public static List<ChapterResponseDto> fromEntityList(List<Chapter> chapters) {
         return chapters.stream()
                 .map(ChapterResponseDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public static List<ChapterResponseDto> fromEntityListLight(List<Chapter> chapters) {
+        return chapters.stream()
+                .map(ChapterResponseDto::fromEntityLight)
                 .collect(Collectors.toList());
     }
 } 

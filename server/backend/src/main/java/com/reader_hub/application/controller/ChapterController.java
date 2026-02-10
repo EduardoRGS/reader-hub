@@ -78,8 +78,9 @@ public class ChapterController {
         Page<Chapter> chapters = chapterService.findAll(PageRequest.of(offset / limit, limit));
         
         // Usar o novo DTO padronizado com transformação
+        // Usar versão light (sem imagens) para evitar N+1 queries
         PaginatedResponseDto<ChapterResponseDto> response = PaginatedResponseDto.fromPage(
-            chapters, ChapterResponseDto::fromEntity
+            chapters, ChapterResponseDto::fromEntityLight
         );
         
         return ResponseEntity.ok(response);
@@ -110,7 +111,8 @@ public class ChapterController {
         } else {
             chapters = chapterService.findByMangaId(mangaId);
         }
-        return ChapterResponseDto.fromEntityList(chapters);
+        // Usar versão light (sem imagens) para evitar N+1 queries
+        return ChapterResponseDto.fromEntityListLight(chapters);
     }
 
     /**
@@ -142,9 +144,9 @@ public class ChapterController {
             Integer offset) {
         Page<Chapter> chapters = chapterService.findLatestChapters(PageRequest.of(offset / limit, limit));
         
-        // Usar o novo DTO padronizado com transformação
+        // Usar versão light (sem imagens) para evitar N+1 queries
         PaginatedResponseDto<ChapterResponseDto> response = PaginatedResponseDto.fromPage(
-            chapters, ChapterResponseDto::fromEntity
+            chapters, ChapterResponseDto::fromEntityLight
         );
         
         return ResponseEntity.ok(response);
