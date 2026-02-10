@@ -4,7 +4,6 @@ import com.reader_hub.application.dto.AuthorDto;
 import com.reader_hub.application.dto.ExternalMangaDto;
 import com.reader_hub.application.dto.PaginatedDto;
 import com.reader_hub.application.ports.ApiService;
-import com.reader_hub.domain.model.Chapter;
 import com.reader_hub.domain.model.Manga;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 @Service
 @RequiredArgsConstructor
@@ -148,10 +148,18 @@ public class DataPopulationService {
      * Popular capítulos de um manga
      */
     public int populateChaptersForManga(String mangaId) {
-        List<Chapter> chapters = chapterService.populateChaptersForManga(mangaId);
-        log.info("População de capítulos concluída - {} capítulos salvos para manga {}", 
-                 chapters.size(), mangaId);
-        return chapters.size();
+        int count = chapterService.populateChaptersForManga(mangaId);
+        log.info("População de capítulos concluída - {} capítulos salvos para manga {}", count, mangaId);
+        return count;
+    }
+
+    /**
+     * Popular capítulos de um manga com callback de progresso (para SSE streaming).
+     */
+    public int populateChaptersForMangaWithProgress(String mangaId, BiConsumer<Integer, Integer> progressCallback) {
+        int count = chapterService.populateChaptersForManga(mangaId, progressCallback);
+        log.info("População de capítulos concluída - {} capítulos salvos para manga {}", count, mangaId);
+        return count;
     }
 
     /**

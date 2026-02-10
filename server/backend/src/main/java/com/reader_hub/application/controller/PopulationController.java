@@ -19,14 +19,18 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.http.HttpStatus;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RestController
 @RequestMapping("/api/populate")
@@ -188,6 +192,76 @@ public class PopulationController {
             return ResponseEntity.internalServerError().body(createErrorResponse(
                 "Erro durante população de capítulos: " + e.getMessage()));
         }
+    }
+
+    @Operation(
+        summary = "Popular capítulos com progresso (SSE)",
+        description = "Popula capítulos de um manga com streaming de progresso via Server-Sent Events"
+    )
+    @PostMapping(value = "/chapters/{mangaId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamPopulateChaptersForManga(
+            @Parameter(description = "ID único do manga no banco local")
+            @PathVariable
+            @NotBlank(message = "{manga.id.required}")
+            String mangaId) {
+
+        SseEmitter emitter = new SseEmitter(600_000L); // 10 min timeout
+        AtomicBoolean cancelled = new AtomicBoolean(false);
+
+        Thread importThread = new Thread(() -> {
+            try {
+                dataPopulationService.populateChaptersForMangaWithProgress(mangaId, (current, total) -> {
+                    if (cancelled.get()) return;
+                    try {
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("current", current);
+                        data.put("total", total);
+                        data.put("percentage", total > 0 ? Math.round((double) current / total * 100) : 0);
+                        emitter.send(SseEmitter.event()
+                                .name("progress")
+                                .data(data, MediaType.APPLICATION_JSON));
+                    } catch (IOException e) {
+                        cancelled.set(true);
+                        log.warn("Erro ao enviar evento SSE de progresso", e);
+                    }
+                });
+
+                if (!cancelled.get()) {
+                    Map<String, Object> completeData = new HashMap<>();
+                    completeData.put("status", "success");
+                    completeData.put("message", "População de capítulos concluída");
+                    emitter.send(SseEmitter.event()
+                            .name("complete")
+                            .data(completeData, MediaType.APPLICATION_JSON));
+                    emitter.complete();
+                }
+            } catch (Exception e) {
+                log.error("Erro durante importação de capítulos via stream para manga {}", mangaId, e);
+                try {
+                    if (!cancelled.get()) {
+                        Map<String, Object> errorData = new HashMap<>();
+                        errorData.put("status", "error");
+                        errorData.put("message", e.getMessage());
+                        emitter.send(SseEmitter.event()
+                                .name("error")
+                                .data(errorData, MediaType.APPLICATION_JSON));
+                    }
+                } catch (IOException ignored) {}
+                emitter.completeWithError(e);
+            }
+        });
+
+        emitter.onTimeout(() -> {
+            cancelled.set(true);
+            importThread.interrupt();
+        });
+
+        emitter.onCompletion(() -> cancelled.set(true));
+
+        importThread.setDaemon(true);
+        importThread.start();
+
+        return emitter;
     }
 
     @Operation(

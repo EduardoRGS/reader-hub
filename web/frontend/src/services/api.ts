@@ -486,6 +486,120 @@ export const adminService = {
     }
   },
 
+  /**
+   * Importa capítulos com streaming de progresso via SSE.
+   * O callback `onProgress` é chamado a cada capítulo processado.
+   */
+  populateChaptersStream: async (
+    mangaId: string,
+    onProgress: (data: {
+      current: number;
+      total: number;
+      percentage: number;
+    }) => void,
+    signal?: AbortSignal
+  ): Promise<PopulationResult> => {
+    const token = useAuthStore.getState().accessToken;
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/populate/chapters/${mangaId}/stream`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "text/event-stream",
+        },
+        credentials: "include",
+        signal,
+      }
+    );
+
+    if (!response.ok) {
+      let message = "Import failed";
+      try {
+        const errorData = await response.json();
+        message = errorData.message || errorData.error || message;
+      } catch {
+        const text = await response.text();
+        if (text) message = text;
+      }
+      throw new Error(message);
+    }
+
+    if (!response.body) {
+      throw new Error("No response body");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let result: PopulationResult = {
+      status: "success",
+      message: "Import completed",
+    };
+    let completed = false;
+    let streamError: Error | null = null;
+
+    const parseEvents = (chunk: string) => {
+      buffer += chunk;
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
+
+      for (const part of parts) {
+        if (!part.trim()) continue;
+        const lines = part.split("\n");
+        let eventName = "";
+        let eventData = "";
+
+        for (const line of lines) {
+          if (line.startsWith("event:")) eventName = line.substring(6).trim();
+          if (line.startsWith("data:")) eventData = line.substring(5).trim();
+        }
+
+        if (eventName === "progress" && eventData) {
+          onProgress(JSON.parse(eventData));
+        } else if (eventName === "complete" && eventData) {
+          result = JSON.parse(eventData);
+          completed = true;
+        } else if (eventName === "error" && eventData) {
+          const error = JSON.parse(eventData);
+          streamError = new Error(error.message || "Import failed");
+        }
+      }
+    };
+
+    // Lê a stream SSE. Quando o backend chama emitter.complete(), alguns
+    // navegadores (Firefox) lançam NS_ERROR_NET_PARTIAL_TRANSFER em vez de
+    // retornar { done: true }. Capturamos esse erro e tratamos como
+    // conclusão normal se já recebemos o evento "complete".
+    try {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        parseEvents(decoder.decode(value, { stream: true }));
+        if (streamError) throw streamError;
+      }
+    } catch (e: unknown) {
+      // Se já recebemos o evento "complete", ignorar erros de stream
+      // (Firefox fecha a conexão com NS_ERROR_NET_PARTIAL_TRANSFER)
+      if (!completed) {
+        if (streamError) throw streamError;
+        // Se é um AbortError (cancelamento do usuário), propagar
+        if (e instanceof DOMException && e.name === "AbortError") throw e;
+        // Se é um TypeError de rede (stream encerrada), tratar como fim
+        if (e instanceof TypeError) {
+          // Stream ended — pode ser encerramento normal sem "complete"
+          return result;
+        }
+        throw e;
+      }
+    }
+
+    if (streamError) throw streamError;
+    return result;
+  },
+
   populateCompletePopular: async (
     mangaLimit = 10,
     offset = 0,

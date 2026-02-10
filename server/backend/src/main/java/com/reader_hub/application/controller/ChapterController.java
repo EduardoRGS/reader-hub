@@ -113,16 +113,21 @@ public class ChapterController {
         return ChapterResponseDto.fromEntityList(chapters);
     }
 
+    /**
+     * Retorna capítulo com páginas (imagens).
+     * Se as páginas ainda não foram carregadas, busca da API do MangaDex sob demanda (lazy loading).
+     */
     @GetMapping("/local/{id}/with-pages")
     public ResponseEntity<ChapterResponseDto> getLocalChapterWithPages(
             @PathVariable 
             @NotBlank(message = "ID do capítulo é obrigatório")
             String id) {
-        Optional<Chapter> chapter = chapterService.findByIdWithImages(id);
-        if (chapter.isPresent()) {
-            return ResponseEntity.ok(ChapterResponseDto.fromEntity(chapter.get()));
+        try {
+            Chapter chapter = chapterService.loadPagesIfNeeded(id);
+            return ResponseEntity.ok(ChapterResponseDto.fromEntity(chapter));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/latest")

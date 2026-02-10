@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   Flex,
@@ -8,24 +8,18 @@ import {
   TextField,
   Badge,
   Box,
-  Button,
   Callout,
-  Spinner,
 } from "@radix-ui/themes";
 import {
   Search,
   BookOpen,
   Clock,
-  Download,
-  CheckCircle,
-  AlertCircle,
   Info,
 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { formatDate } from "@/lib/utils";
 import type { Chapter } from "@/types/manga";
 import { useReaderStore } from "@/store/readerStore";
-import { usePopulateChapters, useInvalidateMangas } from "@/hooks/queries";
 import { useLocale } from "@/hooks/useLocale";
 import { CHAPTER_LANGUAGE_MAP } from "@/lib/i18n";
 
@@ -39,16 +33,8 @@ interface ChapterListProps {
 export function ChapterList({ chapters, mangaId }: ChapterListProps) {
   const [search, setSearch] = useState("");
   const { readingHistory } = useReaderStore();
-  const populateMutation = usePopulateChapters();
-  const { invalidateChapters } = useInvalidateMangas();
   const { locale, t } = useLocale();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const handlePopulateChapters = useCallback(() => {
-    populateMutation.mutate(mangaId, {
-      onSuccess: () => invalidateChapters(mangaId),
-    });
-  }, [populateMutation, mangaId, invalidateChapters]);
 
   // Filtra capítulos pelo idioma selecionado
   const acceptedLanguages = CHAPTER_LANGUAGE_MAP[locale];
@@ -102,45 +88,6 @@ export function ChapterList({ chapters, mangaId }: ChapterListProps) {
         <Text size="2" color="gray">
           {t("chapters.empty")}
         </Text>
-        <Button
-          variant="soft"
-          onClick={handlePopulateChapters}
-          disabled={populateMutation.isPending}
-        >
-          {populateMutation.isPending ? (
-            <Spinner size="1" />
-          ) : (
-            <Download size={14} />
-          )}
-          {populateMutation.isPending
-            ? t("chapters.importing")
-            : t("chapters.import_mangadex")}
-        </Button>
-
-        {populateMutation.data && (
-          <Callout.Root
-            color={populateMutation.data.status === "success" ? "green" : "red"}
-            size="1"
-          >
-            <Callout.Icon>
-              {populateMutation.data.status === "success" ? (
-                <CheckCircle size={14} />
-              ) : (
-                <AlertCircle size={14} />
-              )}
-            </Callout.Icon>
-            <Callout.Text>{populateMutation.data.message}</Callout.Text>
-          </Callout.Root>
-        )}
-
-        {populateMutation.error && (
-          <Callout.Root color="red" size="1">
-            <Callout.Icon>
-              <AlertCircle size={14} />
-            </Callout.Icon>
-            <Callout.Text>{populateMutation.error.message}</Callout.Text>
-          </Callout.Root>
-        )}
       </Flex>
     );
   }

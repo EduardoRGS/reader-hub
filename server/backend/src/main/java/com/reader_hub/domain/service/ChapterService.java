@@ -6,6 +6,8 @@ import com.reader_hub.application.ports.ApiService;
 import com.reader_hub.domain.model.Chapter;
 import com.reader_hub.domain.model.Manga;
 import com.reader_hub.domain.repository.ChapterRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,9 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 @Service
 @RequiredArgsConstructor
@@ -27,14 +29,15 @@ public class ChapterService {
     private final ApiService apiService;
     private final MangaService mangaService;
 
-    private static final long API_RATE_LIMIT_MS = 1000;
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    private static final int FLUSH_BATCH_SIZE = 50;
     
     /**
      * Salva um novo capítulo no banco de dados
      */
     public Chapter saveChapter(Chapter chapter) {
-        log.info("Salvando capítulo: {}", chapter.getTitle());
-        
         // Validar se o manga existe
         if (chapter.getManga() != null && chapter.getManga().getId() != null) {
             if (!mangaService.existsById(chapter.getManga().getId())) {
@@ -43,19 +46,21 @@ public class ChapterService {
         }
         
         var saved = chapterRepository.save(chapter);
-        log.info("Capítulo salvo com ID interno: {} e apiId: {}", saved.getId(), saved.getApiId());
+        log.debug("Capítulo salvo: {} (apiId: {})", saved.getId(), saved.getApiId());
         return saved;
     }
     
     /**
-     * Cria um novo capítulo a partir de dados da API
+     * Cria um novo capítulo a partir de dados da API.
+     * As páginas (imagens) NÃO são buscadas aqui — são carregadas sob demanda
+     * quando o usuário abre o capítulo para leitura (lazy loading).
      */
     public Chapter createChapter(ChapterDto dto, Manga manga) {
         // Verificar se o capítulo já existe
         var existing = chapterRepository.findByMangaIdAndChapterNumber(
             manga.getId(), dto.getAttributes().getChapter());
         if (existing.isPresent()) {
-            log.info("Capítulo já existe: {}", dto.getId());
+            log.debug("Capítulo já existe, pulando: {}", dto.getId());
             return existing.get();
         }
         
@@ -71,15 +76,6 @@ public class ChapterService {
         chapter.setUpdatedAt(dto.getAttributes().getUpdatedAt());
         chapter.setReadableAt(dto.getAttributes().getReadableAt());
         chapter.setManga(manga);
-        
-        // Buscar páginas do capítulo
-        try {
-            List<String> pages = apiService.getChapterPages(dto.getId());
-            chapter.setImages(pages);
-            chapter.setPages(pages.size());
-        } catch (Exception e) {
-            log.warn("Erro ao buscar páginas do capítulo {}: {}", dto.getId(), e.getMessage());
-        }
         
         return saveChapter(chapter);
     }
@@ -180,29 +176,90 @@ public class ChapterService {
     }
     
     /**
-     * Busca e salva capítulos de um manga da API com rate limiting
+     * Busca e salva capítulos de um manga da API.
+     * Páginas são carregadas sob demanda (lazy loading) — não durante a importação.
      */
     @Transactional
-    public List<Chapter> populateChaptersForManga(String mangaId) {
+    public int populateChaptersForManga(String mangaId) {
+        return populateChaptersForManga(mangaId, null);
+    }
+
+    /**
+     * Busca e salva capítulos de um manga da API com callback de progresso.
+     * 
+     * Otimizações de performance:
+     * - Páginas NÃO são buscadas aqui (lazy loading ao ler o capítulo)
+     * - Sem sleep entre capítulos (não há chamada HTTP por capítulo)
+     * - Flush/clear do EntityManager a cada FLUSH_BATCH_SIZE capítulos para liberar memória
+     * - Retorna apenas o count, sem acumular entidades em lista
+     */
+    @Transactional
+    public int populateChaptersForManga(String mangaId, BiConsumer<Integer, Integer> progressCallback) {
         Manga manga = mangaService.findById(mangaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Manga", "ID", mangaId));
         
         List<ChapterDto> chaptersDto = apiService.getChaptersByMangaId(manga.getApiId(), 500, 0);
+        int total = chaptersDto.size();
         
-        log.info("Encontrados {} capítulos para o manga {}", chaptersDto.size(), manga.getTitle());
+        log.info("Encontrados {} capítulos para o manga {}", total, manga.getTitle());
         
-        List<Chapter> chapters = new ArrayList<>();
-        for (ChapterDto dto : chaptersDto) {
-            chapters.add(createChapter(dto, manga));
-            try {
-                Thread.sleep(API_RATE_LIMIT_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("Thread interrompida durante delay de rate limiting");
+        if (progressCallback != null) {
+            progressCallback.accept(0, total);
+        }
+        
+        int savedCount = 0;
+        for (int i = 0; i < total; i++) {
+            // Verificar se a thread foi interrompida (ex.: SSE desconectou)
+            if (Thread.currentThread().isInterrupted()) {
+                log.warn("Thread interrompida durante importação de capítulos — parando no capítulo {}/{}", i, total);
                 break;
             }
+            
+            createChapter(chaptersDto.get(i), manga);
+            savedCount++;
+            
+            if (progressCallback != null) {
+                progressCallback.accept(i + 1, total);
+            }
+            
+            // Batch flush/clear para liberar memória do persistence context
+            if ((i + 1) % FLUSH_BATCH_SIZE == 0) {
+                entityManager.flush();
+                entityManager.clear();
+                // Re-attach manga pois foi desanexado pelo clear()
+                manga = entityManager.merge(manga);
+                log.debug("Batch flush/clear após {} capítulos", i + 1);
+            }
         }
-        return chapters;
+        
+        return savedCount;
+    }
+
+    /**
+     * Carrega as páginas (imagens) de um capítulo sob demanda.
+     * Se já existem no banco, retorna direto.
+     * Se não, busca da API do MangaDex, salva no banco e retorna.
+     */
+    @Transactional
+    public Chapter loadPagesIfNeeded(String chapterId) {
+        Chapter chapter = chapterRepository.findByIdWithImages(chapterId)
+                .orElseThrow(() -> new ResourceNotFoundException("Capítulo", "ID", chapterId));
+        
+        if (chapter.getImages() == null || chapter.getImages().isEmpty()) {
+            if (chapter.getApiId() != null) {
+                try {
+                    List<String> pages = apiService.getChapterPages(chapter.getApiId());
+                    chapter.setImages(pages);
+                    chapter.setPages(pages.size());
+                    chapterRepository.save(chapter);
+                    log.info("Páginas carregadas sob demanda para capítulo {} — {} páginas", chapterId, pages.size());
+                } catch (Exception e) {
+                    log.warn("Erro ao carregar páginas do capítulo {}: {}", chapterId, e.getMessage());
+                }
+            }
+        }
+        
+        return chapter;
     }
 
     /**

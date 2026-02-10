@@ -35,10 +35,10 @@ import {
 import {
   useMangaWithAuthor,
   useChaptersByMangaId,
-  usePopulateChapters,
-  useInvalidateMangas,
   usePrefetchChapters,
 } from "@/hooks/queries";
+import { useChapterImport } from "@/hooks/useChapterImport";
+import { useAuthStore } from "@/store/authStore";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ChapterList } from "@/components/chapter/ChapterList";
 import {
@@ -61,8 +61,8 @@ export default function MangaDetailPage({
   const { data: chapters, isLoading: chaptersLoading } =
     useChaptersByMangaId(id);
   const { getLastReadChapter } = useReaderStore();
-  const populateChapters = usePopulateChapters();
-  const { invalidateChapters } = useInvalidateMangas();
+  const { progress, isImporting, error: importError, startImport } = useChapterImport();
+  const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
   const { locale, t } = useLocale();
 
   usePrefetchChapters(id);
@@ -434,28 +434,63 @@ export default function MangaDetailPage({
                   </Button>
                 </Link>
               )}
-              <Button
-                size="3"
-                variant="soft"
-                color="gray"
-                onClick={() =>
-                  populateChapters.mutate(id, {
-                    onSuccess: () => invalidateChapters(id),
-                  })
-                }
-                disabled={populateChapters.isPending}
-              >
-                {populateChapters.isPending ? (
-                  <Spinner size="1" />
-                ) : (
+              {isAdmin && !isImporting && (
+                <Button
+                  size="3"
+                  variant="soft"
+                  color="gray"
+                  onClick={() => startImport(id)}
+                >
                   <Download size={16} />
-                )}
-                {populateChapters.isPending
-                  ? t("manga.importing")
-                  : chapters?.length
-                  ? t("manga.update_chapters")
-                  : t("manga.import_chapters")}
-              </Button>
+                  {chapters?.length
+                    ? t("manga.update_chapters")
+                    : t("manga.import_chapters")}
+                </Button>
+              )}
+
+              {isAdmin && isImporting && (
+                <Flex direction="column" gap="2" style={{ flex: 1, maxWidth: 400 }}>
+                  <Button size="3" variant="soft" color="gray" disabled>
+                    <Spinner size="1" />
+                    {progress
+                      ? t("manga.importing_progress", {
+                          percentage: progress.percentage,
+                          current: progress.current,
+                          total: progress.total,
+                        })
+                      : t("manga.importing")}
+                  </Button>
+                  {progress && (
+                    <Box
+                      style={{
+                        height: 6,
+                        background: "var(--gray-a4)",
+                        borderRadius: 3,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <Box
+                        style={{
+                          height: "100%",
+                          width: `${progress.percentage}%`,
+                          background: "var(--accent-9)",
+                          borderRadius: 3,
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                    </Box>
+                  )}
+                </Flex>
+              )}
+
+              {isAdmin && importError && (
+                <Callout.Root color="red" size="1">
+                  <Callout.Icon>
+                    <AlertCircle size={14} />
+                  </Callout.Icon>
+                  <Callout.Text>{importError}</Callout.Text>
+                </Callout.Root>
+              )}
             </Flex>
 
             <Separator size="4" />
