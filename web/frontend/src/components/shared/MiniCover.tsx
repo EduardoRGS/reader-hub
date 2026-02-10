@@ -44,6 +44,7 @@ export function MiniCover({
           fill
           sizes={`${width}px`}
           style={{ objectFit: "cover" }}
+          unoptimized
           placeholder="blur"
           blurDataURL={COVER_BLUR_DATA_URL}
         />

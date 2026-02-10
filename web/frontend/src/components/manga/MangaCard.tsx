@@ -70,6 +70,7 @@ export const MangaCard = memo(function MangaCard({
                 fill
                 sizes="(max-width: 768px) 50vw, 25vw"
                 style={{ objectFit: "cover" }}
+                unoptimized
                 placeholder="blur"
                 blurDataURL={COVER_BLUR_DATA_URL}
               />

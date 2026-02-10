@@ -91,6 +91,7 @@ export function HeroSlider() {
             fill
             sizes="100vw"
             style={{ objectFit: "cover" }}
+            unoptimized
             priority
             placeholder="blur"
             blurDataURL={COVER_BLUR_DATA_URL}
@@ -138,6 +139,7 @@ export function HeroSlider() {
                 fill
                 sizes="(max-width: 640px) 180px, 240px"
                 style={{ objectFit: "cover", borderRadius: 12 }}
+                unoptimized
                 priority
                 placeholder="blur"
                 blurDataURL={COVER_BLUR_DATA_URL}
