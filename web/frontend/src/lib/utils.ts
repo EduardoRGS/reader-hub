@@ -69,17 +69,22 @@ export function formatRating(rating?: number): string {
 }
 
 /**
- * Converte URLs de capa do MangaDex para o proxy local do Next.js.
+ * Converte URLs de capa do MangaDex para o proxy local (/api/cover).
  * Evita a proteção de hotlink do MangaDex (placeholder "You can read this on MangaDex").
  *
- * Transforma: https://uploads.mangadex.org/covers/... → /mangadex-covers/...
+ * Transforma: https://uploads.mangadex.org/... → /api/cover?url=https://uploads.mangadex.org/...
  */
-const MANGADEX_COVERS_ORIGIN = "https://uploads.mangadex.org/covers/";
+const MANGADEX_UPLOADS_HOST = "uploads.mangadex.org";
 
 export function proxyCoverUrl(url?: string): string | undefined {
   if (!url) return undefined;
-  if (url.startsWith(MANGADEX_COVERS_ORIGIN)) {
-    return "/mangadex-covers/" + url.slice(MANGADEX_COVERS_ORIGIN.length);
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === MANGADEX_UPLOADS_HOST) {
+      return `/api/cover?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    // URL inválida, retornar como está
   }
   return url;
 }
